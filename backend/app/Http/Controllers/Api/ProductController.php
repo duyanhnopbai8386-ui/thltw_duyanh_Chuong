@@ -3,27 +3,34 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductController extends Controller
 {
-    // Lấy danh sách sản phẩm
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
-        return response()->json(Product::all(), 200);
+        $products = Product::with('brand')
+            ->latest()
+            ->get(); // e lấy tất cả sp nếu theo slice thì paginate(12);
+
+        return ProductResource::collection($products);
     }
 
-    // Thêm sản phẩm mới
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'price' => 'required|numeric',
+        $validated = $request->validate([
+            'brand_id' => ['nullable', 'exists:brands,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'description' => ['nullable', 'string'],
         ]);
 
-        $product = Product::create($request->all());
+        $product = Product::create($validated);
+        $product->load('brand');
 
-        return response()->json($product, 201);
+        return new ProductResource($product);
     }
 }
