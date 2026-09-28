@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class Product extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'brand_id',
+        'category_id',
         'name',
         'price',
         'description',
@@ -21,6 +24,7 @@ class Product extends Model
             'price' => 'decimal:2',
         ];
     }
+
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
