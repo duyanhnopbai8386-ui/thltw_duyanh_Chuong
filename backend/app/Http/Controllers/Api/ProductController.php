@@ -7,6 +7,7 @@ use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class ProductController extends Controller
 {
@@ -23,6 +24,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'brand_id' => ['nullable', 'exists:brands,id'],
+            'category_id' => ['nullable', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
@@ -32,5 +34,28 @@ class ProductController extends Controller
         $product->load('brand');
 
         return new ProductResource($product);
+    }
+
+    public function update(Request $request, Product $product): ProductResource
+    {
+        $validated = $request->validate([
+            'brand_id' => ['sometimes', 'nullable', 'exists:brands,id'],
+            'category_id' => ['sometimes', 'nullable', 'exists:categories,id'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description' => ['sometimes', 'nullable', 'string'],
+        ]);
+
+        $product->update($validated);
+        $product->load('brand');
+
+        return new ProductResource($product);
+    }
+
+    public function destroy(Product $product): Response
+    {
+        $product->delete();
+
+        return response()->noContent();
     }
 }
