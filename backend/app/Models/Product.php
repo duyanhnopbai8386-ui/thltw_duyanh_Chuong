@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Product extends Model
 {
-    use HasFactory;
+    protected $fillable = ['category_id', 'brand_id', 'name', 'slug', 'price', 'sale_price', 'status'];
 
-    protected $fillable = ['name', 'price', 'description'];
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('status', 1);
+    }
 }
