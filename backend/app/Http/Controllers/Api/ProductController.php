@@ -4,26 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use Illuminate\Http\Request;
+use App\Http\Resources\ProductResource;
 
 class ProductController extends Controller
 {
-    // Lấy danh sách sản phẩm
     public function index()
     {
-        return response()->json(Product::all(), 200);
-    }
+        // Phân trang 10 sản phẩm / trang
+        $products = Product::active()->latest()->paginate(10);
 
-    // Thêm sản phẩm mới
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string',
-            'price' => 'required|numeric',
-        ]);
-
-        $product = Product::create($request->all());
-
-        return response()->json($product, 201);
+        return ProductResource::collection($products);
     }
 }
