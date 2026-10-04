@@ -26,6 +26,7 @@ class BrandController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'slug' => ['required', 'string', 'max:150', 'unique:brands,slug'],
+            'image' => ['nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'boolean'],
         ]);
 
@@ -45,6 +46,7 @@ class BrandController extends Controller
                 'max:150',
                 Rule::unique('brands', 'slug')->ignore($brand),
             ],
+            'image' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'boolean'],
         ]);
 

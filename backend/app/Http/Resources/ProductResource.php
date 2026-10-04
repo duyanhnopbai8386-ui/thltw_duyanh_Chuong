@@ -12,14 +12,28 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'category_id' => $this->category_id,
+            'brand_id' => $this->brand_id,
             'name' => $this->name,
+            'slug' => $this->slug,
+            'image' => $this->image,
             'price' => $this->price,
+            'sale_price' => $this->sale_price,
+            'stock' => $this->stock,
+            'status' => $this->status,
             'description' => $this->description,
             'brand' => $this->whenLoaded('brand', function () {
                 return [
                     'id' => $this->brand->id,
                     'name' => $this->brand->name,
                     'slug' => $this->brand->slug,
+                    'image' => $this->brand->image,
+                ];
+            }),
+            'category' => $this->whenLoaded('category', function () {
+                return [
+                    'id' => $this->category->id,
+                    'name' => $this->category->name,
+                    'slug' => $this->category->slug,
                 ];
             }),
         ];
