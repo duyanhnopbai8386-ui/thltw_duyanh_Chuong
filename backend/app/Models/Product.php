@@ -14,7 +14,12 @@ class Product extends Model
         'brand_id',
         'category_id',
         'name',
+        'slug',
+        'image',
         'price',
+        'sale_price',
+        'stock',
+        'status',
         'description',
     ];
 

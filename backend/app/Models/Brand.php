@@ -11,7 +11,7 @@ class Brand extends Model
 {
     use HasFactory;
 
-   protected $fillable = ['name', 'slug', 'status'];
+    protected $fillable = ['name', 'slug', 'image', 'status'];
     protected function casts(): array
     {
         return [
