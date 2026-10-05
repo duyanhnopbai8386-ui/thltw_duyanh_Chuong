@@ -1,29 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\BrandController;
-use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\Api\CartController;
 
-// --- PUBLIC ROUTES ---
-Route::get('/brands', [BrandController::class, 'index']);
-Route::post('/brands', [BrandController::class, 'store']);
-Route::match(['put', 'patch'], '/brands/{brand}', [BrandController::class, 'update']);
-Route::delete('/brands/{brand}', [BrandController::class, 'destroy']);
-
-Route::get('/products', [ProductController::class, 'index']);
-Route::post('/products', [ProductController::class, 'store']);
-Route::match(['put', 'patch'], '/products/{product}', [ProductController::class, 'update']);
-Route::delete('/products/{product}', [ProductController::class, 'destroy']);
-
-Route::get('/categories', [CategoryController::class, 'index']);
-Route::get('/categories/{slug}', [CategoryController::class, 'show']);
-
-// --- AUTH ROUTES ---
+// Các API xác thực tài khoản
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// --- PUBLIC CATEGORIES ROUTES (Không cần đăng nhập vẫn xem được) ---
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{slug}', [CategoryController::class, 'show']); // <--- Đã sửa {id} thành {slug}
 
 // --- PROTECTED ROUTES (Cần phải Đăng nhập & gửi Token) ---
 Route::middleware('auth:sanctum')->group(function () {
@@ -34,7 +21,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{id}', [CategoryController::class, 'update']);
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
-
-    // API Giỏ hàng (Của Duy Anh - Chỉ User đăng nhập mới dùng được)
-    Route::apiResource('carts', CartController::class)->except(['show']);
 });
