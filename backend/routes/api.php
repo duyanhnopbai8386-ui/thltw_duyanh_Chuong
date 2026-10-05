@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\Api\CartController;
 
 // --- PUBLIC ROUTES ---
 Route::get('/brands', [BrandController::class, 'index']);
@@ -33,4 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{id}', [CategoryController::class, 'update']);
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+
+    // API Giỏ hàng (Của Duy Anh - Chỉ User đăng nhập mới dùng được)
+    Route::apiResource('carts', CartController::class)->except(['show']);
 });
