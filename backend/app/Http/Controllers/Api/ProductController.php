@@ -48,8 +48,10 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
-    public function update(Request $request, Product $product): ProductResource
+    public function update(Request $request, $id): ProductResource
     {
+        $product = Product::findOrFail($id);
+
         $validated = $request->validate([
             'brand_id' => ['sometimes', 'nullable', 'exists:brands,id'],
             'category_id' => ['sometimes', 'nullable', 'exists:categories,id'],
@@ -69,16 +71,20 @@ class ProductController extends Controller
             $validated['image'] = '/storage/' . $path;
         }
 
-        $product->update($validated); // nếu có ảnh mới cập nhật ảnh mới vào 
+        $product->update($validated);
         $product->load(['brand', 'category']);
 
         return new ProductResource($product);
     }
 
-    public function destroy(Product $product): Response
+    public function destroy($id)
     {
+        $product = Product::findOrFail($id);
         $product->delete();
 
-        return response()->noContent();
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã xóa sản phẩm thành công'
+        ], 200);
     }
 }

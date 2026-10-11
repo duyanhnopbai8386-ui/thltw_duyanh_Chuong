@@ -9,6 +9,7 @@ export default function AdminBrandsPage() {
     const [slug, setSlug] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [editId, setEditId] = useState(null);
     const router = useRouter();
 
     // 1. Tải danh sách thương hiệu từ API
@@ -33,7 +34,6 @@ export default function AdminBrandsPage() {
     const handleNameChange = (e) => {
         const val = e.target.value;
         setName(val);
-        // Tự tạo slug đơn giản
         const generatedSlug = val
             .toLowerCase()
             .normalize('NFD')
@@ -44,8 +44,8 @@ export default function AdminBrandsPage() {
         setSlug(generatedSlug);
     };
 
-    // 2. Thêm mới thương hiệu (hỗ trợ upload ảnh bằng FormData)
-    const handleAddBrand = async (e) => {
+    // 2. Thêm mới hoặc Cập nhật thương hiệu (hỗ trợ upload ảnh bằng FormData)
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
@@ -56,23 +56,48 @@ export default function AdminBrandsPage() {
                 formData.append('image', imageFile);
             }
 
-            await api.post('/brands', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            if (editId) {
+                // Sửa: gửi qua POST với _method=PUT
+                formData.append('_method', 'PUT');
+                await api.post(`/brands/${editId}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                alert('Cập nhật thương hiệu thành công!');
+                setEditId(null);
+            } else {
+                // Thêm mới
+                await api.post('/brands', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                alert('Thêm thương hiệu thành công!');
+            }
 
-            alert('Thêm thương hiệu thành công!');
             setName('');
             setSlug('');
             setImageFile(null);
             fetchBrands();
         } catch (err) {
-            console.error("Lỗi thêm thương hiệu:", err);
-            alert(err.response?.data?.message || 'Có lỗi xảy ra khi thêm thương hiệu.');
+            console.error("Lỗi lưu thương hiệu:", err);
+            alert(err.response?.data?.message || 'Có lỗi xảy ra khi lưu thương hiệu.');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Nạp dữ liệu lên form để Sửa
+    const handleEditClick = (b) => {
+        setEditId(b.id);
+        setName(b.name || '');
+        setSlug(b.slug || '');
+        setImageFile(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setEditId(null);
+        setName('');
+        setSlug('');
+        setImageFile(null);
     };
 
     // 3. Xóa thương hiệu
@@ -80,7 +105,7 @@ export default function AdminBrandsPage() {
         if (!confirm('Bạn có chắc chắn muốn xóa thương hiệu này?')) return;
         try {
             await api.delete(`/brands/${id}`);
-            alert('Xóa thương hiệu thành công!');
+            alert('Đã xóa thương hiệu!');
             fetchBrands();
         } catch (err) {
             console.error("Lỗi xóa thương hiệu:", err);
@@ -92,9 +117,23 @@ export default function AdminBrandsPage() {
         <div className="p-8 max-w-5xl mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Quản lý Thương hiệu</h1>
 
-            {/* Form thêm thương hiệu */}
-            <form onSubmit={handleAddBrand} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8 space-y-4">
-                <h2 className="text-lg font-semibold text-gray-700 mb-2">+ Thêm thương hiệu mới</h2>
+            {/* Form thêm / sửa thương hiệu */}
+            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8 space-y-4">
+                <div className="flex items-center justify-between border-b pb-3">
+                    <h2 className="text-lg font-semibold text-gray-700">
+                        {editId ? `✏️ Cập nhật thương hiệu #${editId}` : '➕ Thêm thương hiệu mới'}
+                    </h2>
+                    {editId && (
+                        <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="text-sm text-gray-500 hover:text-gray-800"
+                        >
+                            Hủy bỏ chỉnh sửa
+                        </button>
+                    )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Tên thương hiệu *</label>
@@ -119,7 +158,9 @@ export default function AdminBrandsPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Logo Thương hiệu (Ảnh)</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            Logo Thương hiệu (Ảnh) {editId && <span className="font-normal text-gray-400">(Bỏ qua nếu không đổi)</span>}
+                        </label>
                         <input
                             type="file"
                             accept="image/*"
@@ -129,13 +170,24 @@ export default function AdminBrandsPage() {
                     </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end gap-3 pt-2">
+                    {editId && (
+                        <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50"
+                        >
+                            Hủy
+                        </button>
+                    )}
                     <button
                         type="submit"
                         disabled={loading}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                        className={`px-6 py-2 rounded-lg text-sm font-medium text-white transition disabled:opacity-50 ${
+                            editId ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                     >
-                        {loading ? 'Đang lưu...' : '+ Thêm thương hiệu'}
+                        {loading ? 'Đang lưu...' : editId ? 'Lưu thay đổi' : '+ Thêm thương hiệu'}
                     </button>
                 </div>
             </form>
@@ -171,7 +223,13 @@ export default function AdminBrandsPage() {
                                     </td>
                                     <td className="p-4 font-semibold text-gray-900">{b.name}</td>
                                     <td className="p-4 text-gray-500 font-mono text-xs">{b.slug}</td>
-                                    <td className="p-4 text-center">
+                                    <td className="p-4 text-center space-x-3">
+                                        <button
+                                            onClick={() => handleEditClick(b)}
+                                            className="text-blue-600 hover:text-blue-800 font-medium"
+                                        >
+                                            Sửa
+                                        </button>
                                         <button
                                             onClick={() => handleDelete(b.id)}
                                             className="text-red-600 hover:text-red-800 font-medium"

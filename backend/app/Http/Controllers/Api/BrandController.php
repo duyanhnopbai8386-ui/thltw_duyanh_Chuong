@@ -40,8 +40,10 @@ class BrandController extends Controller
         return new BrandResource($brand);
     }
 
-    public function update(Request $request, Brand $brand): BrandResource
+    public function update(Request $request, $brand): BrandResource
     {
+        $brandModel = $brand instanceof Brand ? $brand : Brand::findOrFail($brand);
+
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:150'],
             'slug' => [
@@ -49,7 +51,7 @@ class BrandController extends Controller
                 'required',
                 'string',
                 'max:150',
-                Rule::unique('brands', 'slug')->ignore($brand),
+                Rule::unique('brands', 'slug')->ignore($brandModel),
             ],
             'image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'], // Nhận file ảnh
             'status' => ['sometimes', 'boolean'],
@@ -60,15 +62,19 @@ class BrandController extends Controller
             $validated['image'] = '/storage/' . $path;
         }
 
-        $brand->update($validated);
+        $brandModel->update($validated);
 
-        return new BrandResource($brand->refresh());
+        return new BrandResource($brandModel->refresh());
     }
 
-    public function destroy(Brand $brand): Response
+    public function destroy($brand)
     {
-        $brand->delete();
+        $brandModel = $brand instanceof Brand ? $brand : Brand::findOrFail($brand);
+        $brandModel->delete();
 
-        return response()->noContent();
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã xóa thương hiệu thành công'
+        ], 200);
     }
 }
