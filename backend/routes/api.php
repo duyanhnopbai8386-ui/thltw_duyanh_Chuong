@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\OrderController;
 
 // --- API XÁC THỰC TÀI KHOẢN (Public) ---
 Route::post('/register', [AuthController::class, 'register']);
@@ -21,6 +22,9 @@ Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/brands/{brand}', [BrandController::class, 'show']);
 
+// Đặt hàng (Khách mua hàng)
+Route::post('/orders', [OrderController::class, 'store']);
+
 // --- API DÀNH CHO USER ĐÃ ĐĂNG NHẬP (auth:sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -28,9 +32,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Giỏ hàng (User)
     Route::apiResource('carts', CartController::class);
+
+    // Lịch sử đơn hàng của User
+    Route::get('/my-orders', [OrderController::class, 'myOrders']);
 });
 
-// --- API QUẢN TRỊ ADMIN (Thêm, Sửa, Xóa Categories, Products, Brands) ---
+// --- API QUẢN TRỊ ADMIN (Thêm, Sửa, Xóa Categories, Products, Brands, Quản lý Orders) ---
 // Dùng auth:sanctum và admin middleware khi triển khai đầy đủ
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     // Quản lý Categories
@@ -56,4 +63,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/brands', [BrandController::class, 'store']);
     Route::put('/brands/{brand}', [BrandController::class, 'update']);
     Route::delete('/brands/{brand}', [BrandController::class, 'destroy']);
+
+    // Quản lý Đơn hàng (Orders)
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
 });
