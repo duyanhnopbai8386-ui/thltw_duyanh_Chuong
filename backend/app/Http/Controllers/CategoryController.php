@@ -11,10 +11,11 @@ class CategoryController extends Controller
     // 1. LẤY DANH SÁCH DANH MỤC CÓ PHÂN TRANG (GET /api/categories)
     public function index(Request $request)
     {
-        // Lấy số lượng item trên 1 trang từ tham số query, mặc định là 5
+        // lấy số lượng sản phẩm dùng limit cắt lấy đúng 5 sản phẩm
         $limit = $request->query('limit', 5);
 
-        // Lấy danh sách danh mục có phân trang
+        // try vấn thông qua model category , lấy danh mục có cột status = 1, săp xếp mới nhất
+        // trước, lấy dữ liệu của trang được yêu cầu với mỗi trang là limit
         $categories = Category::where('status', 1)->latest()->paginate($limit);
 
         return response()->json([

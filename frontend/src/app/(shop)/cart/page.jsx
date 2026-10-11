@@ -1,10 +1,7 @@
 import Link from 'next/link';
+import { mockCartItems } from '@/data/cart';
 
 export default function CartPage() {
-  const mockCartItems = [
-    { id: 1, name: "Áo thun Basic Pro", price: 150000, quantity: 2 },
-    { id: 3, name: "Sneaker Sport Ultra", price: 499000, quantity: 1 },
-  ];
 
   return (
     <div className="bg-[#f5f5f7] min-h-screen pt-12 pb-24">

@@ -26,9 +26,14 @@ class BrandController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'slug' => ['required', 'string', 'max:150', 'unique:brands,slug'],
-            'image' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'], // Nhận file ảnh
             'status' => ['sometimes', 'boolean'],
         ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('brands', 'public');
+            $validated['image'] = '/storage/' . $path;
+        }
 
         $brand = Brand::create($validated);
 
@@ -46,9 +51,14 @@ class BrandController extends Controller
                 'max:150',
                 Rule::unique('brands', 'slug')->ignore($brand),
             ],
-            'image' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'], // Nhận file ảnh
             'status' => ['sometimes', 'boolean'],
         ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('brands', 'public');
+            $validated['image'] = '/storage/' . $path;
+        }
 
         $brand->update($validated);
 
