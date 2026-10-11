@@ -1,93 +1,80 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Models\User;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class AuthController extends Controller
 {
-    /**
-     * 1. ĐĂNG KÝ (REGISTER)
-     */
+    // Đăng ký tài khoản
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
         ]);
 
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            // 'role' => 'admin' // Có thể gán quyền nếu cần
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'status'       => true,
-            'message'      => 'Đăng ký tài khoản thành công',
-            'user'         => $user,
+            'message' => 'Đăng ký thành công',
             'access_token' => $token,
-            'token_type'   => 'Bearer',
+            'token_type' => 'Bearer',
+            'user' => $user
         ], 201);
     }
 
-    /**
-     * 2. ĐĂNG NHẬP (LOGIN)
-     */
+    // Đăng nhập
     public function login(Request $request)
     {
-        $validated = $request->validate([
-            'email'    => 'required|string|email',
-            'password' => 'required|string',
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
         ]);
 
-        if (!Auth::attempt($validated)) {
+        if (!Auth::attempt($credentials)) {
             return response()->json([
-                'status'  => false,
-                'message' => 'Email hoặc mật khẩu không chính xác',
+                'message' => 'Email hoặc mật khẩu không chính xác.'
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        $user = Auth::user();
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'status'       => true,
-            'message'      => 'Đăng nhập thành công',
-            'user'         => $user,
+            'message' => 'Đăng nhập thành công',
             'access_token' => $token,
-            'token_type'   => 'Bearer',
+            'token_type' => 'Bearer',
+            'user' => $user
         ], 200);
     }
 
-    /**
-     * 3. ĐĂNG XUẤT (LOGOUT)
-     */
+    // Lấy thông tin user hiện tại (/me)
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
+    }
+
+    // Đăng xuất
     public function logout(Request $request)
     {
-        // Xóa token hiện tại đang được sử dụng
+        // Xóa token hiện tại đang dùng để đăng nhập
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Đăng xuất thành công',
-        ], 200);
-    }
-
-    /**
-     * 4. LẤY THÔNG TIN USER ĐANG ĐĂNG NHẬP (ME)
-     */
-    public function me(Request $request)
-    {
-        return response()->json([
-            'status' => true,
-            'user'   => $request->user(),
+            'message' => 'Đăng xuất thành công'
         ], 200);
     }
 }
