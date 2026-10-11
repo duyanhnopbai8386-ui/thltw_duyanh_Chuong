@@ -84,7 +84,43 @@ class ProductController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Đã xóa sản phẩm thành công'
+            'message' => 'Đã chuyển sản phẩm vào thùng rác'
+        ], 200);
+    }
+
+    // Danh sách trong thùng rác
+    public function trash(): AnonymousResourceCollection
+    {
+        $products = Product::onlyTrashed()
+            ->with(['brand', 'category'])
+            ->latest()
+            ->get();
+
+        return ProductResource::collection($products);
+    }
+
+    // Khôi phục từ thùng rác
+    public function restore($id)
+    {
+        $product = Product::onlyTrashed()->findOrFail($id);
+        $product->restore();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã khôi phục sản phẩm thành công',
+            'data' => new ProductResource($product->load(['brand', 'category']))
+        ], 200);
+    }
+
+    // Xóa vĩnh viễn khỏi CSDL
+    public function forceDelete($id)
+    {
+        $product = Product::onlyTrashed()->findOrFail($id);
+        $product->forceDelete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã xóa vĩnh viễn sản phẩm khỏi hệ thống'
         ], 200);
     }
 }

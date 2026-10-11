@@ -34,16 +34,25 @@ Route::middleware('auth:sanctum')->group(function () {
 // Dùng auth:sanctum và admin middleware khi triển khai đầy đủ
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     // Quản lý Categories
+    Route::get('/categories/trash', [CategoryController::class, 'trash']);
+    Route::post('/categories/{id}/restore', [CategoryController::class, 'restore']);
+    Route::delete('/categories/{id}/force-delete', [CategoryController::class, 'forceDelete']);
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{id}', [CategoryController::class, 'update']);
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
     // Quản lý Products
+    Route::get('/products/trash', [ProductController::class, 'trash']);
+    Route::post('/products/{id}/restore', [ProductController::class, 'restore']);
+    Route::delete('/products/{id}/force-delete', [ProductController::class, 'forceDelete']);
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     // Quản lý Brands
+    Route::get('/brands/trash', [BrandController::class, 'trash']);
+    Route::post('/brands/{id}/restore', [BrandController::class, 'restore']);
+    Route::delete('/brands/{id}/force-delete', [BrandController::class, 'forceDelete']);
     Route::post('/brands', [BrandController::class, 'store']);
     Route::put('/brands/{brand}', [BrandController::class, 'update']);
     Route::delete('/brands/{brand}', [BrandController::class, 'destroy']);

@@ -124,7 +124,60 @@ class CategoryController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Xóa danh mục thành công'
+            'message' => 'Đã chuyển danh mục vào thùng rác'
+        ], 200);
+    }
+
+    // Danh sách thùng rác
+    public function trash()
+    {
+        $categories = Category::onlyTrashed()->latest()->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Lấy danh sách thùng rác thành công',
+            'data' => CategoryResource::collection($categories)
+        ], 200);
+    }
+
+    // Khôi phục từ thùng rác
+    public function restore($id)
+    {
+        $category = Category::onlyTrashed()->find($id);
+
+        if (!$category) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Không tìm thấy danh mục trong thùng rác'
+            ], 404);
+        }
+
+        $category->restore();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Khôi phục danh mục thành công',
+            'data' => new CategoryResource($category)
+        ], 200);
+    }
+
+    // Xóa vĩnh viễn
+    public function forceDelete($id)
+    {
+        $category = Category::onlyTrashed()->find($id);
+
+        if (!$category) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Không tìm thấy danh mục trong thùng rác'
+            ], 404);
+        }
+
+        $category->forceDelete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã xóa vĩnh viễn danh mục khỏi hệ thống'
         ], 200);
     }
 }

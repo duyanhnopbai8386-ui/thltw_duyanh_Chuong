@@ -74,7 +74,42 @@ class BrandController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Đã xóa thương hiệu thành công'
+            'message' => 'Đã chuyển thương hiệu vào thùng rác'
+        ], 200);
+    }
+
+    // Danh sách thùng rác
+    public function trash(): AnonymousResourceCollection
+    {
+        $brands = Brand::onlyTrashed()
+            ->latest()
+            ->get();
+
+        return BrandResource::collection($brands);
+    }
+
+    // Khôi phục từ thùng rác
+    public function restore($id)
+    {
+        $brand = Brand::onlyTrashed()->findOrFail($id);
+        $brand->restore();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã khôi phục thương hiệu thành công',
+            'data' => new BrandResource($brand)
+        ], 200);
+    }
+
+    // Xóa vĩnh viễn khỏi CSDL
+    public function forceDelete($id)
+    {
+        $brand = Brand::onlyTrashed()->findOrFail($id);
+        $brand->forceDelete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã xóa vĩnh viễn thương hiệu khỏi hệ thống'
         ], 200);
     }
 }
