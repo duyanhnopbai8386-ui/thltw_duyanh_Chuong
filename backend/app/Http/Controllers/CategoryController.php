@@ -34,6 +34,10 @@ class CategoryController extends Controller
     // 2. THÊM MỚI DANH MỤC (POST /api/categories)
     public function store(Request $request)
     {
+        if (!$request->filled('slug') && $request->filled('name')) {
+            $request->merge(['slug' => \Illuminate\Support\Str::slug($request->name)]);
+        }
+
         $fields = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|unique:categories,slug',
@@ -80,6 +84,10 @@ class CategoryController extends Controller
                 'status' => false,
                 'message' => 'Không tìm thấy danh mục'
             ], 404);
+        }
+
+        if (!$request->filled('slug') && $request->filled('name')) {
+            $request->merge(['slug' => \Illuminate\Support\Str::slug($request->name)]);
         }
 
         $fields = $request->validate([

@@ -10,6 +10,7 @@ export default function AdminLayout({ children }) {
         { name: 'Dashboard', href: '/admin', icon: '📊' },
         { name: 'Quản lý Sản phẩm', href: '/admin/products', icon: '📦' },
         { name: 'Quản lý Danh mục', href: '/admin/categories', icon: '📁' },
+        { name: 'Quản lý Thương hiệu', href: '/admin/brands', icon: '🏷️' },
         { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: '🛒' },
     ];
 
