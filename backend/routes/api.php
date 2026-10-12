@@ -38,7 +38,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // --- API QUẢN TRỊ ADMIN (Thêm, Sửa, Xóa Categories, Products, Brands, Quản lý Orders) ---
-// Dùng auth:sanctum và admin middleware khi triển khai đầy đủ
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     // Quản lý Categories
     Route::get('/categories/trash', [CategoryController::class, 'trash']);
@@ -64,8 +63,12 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::put('/brands/{brand}', [BrandController::class, 'update']);
     Route::delete('/brands/{brand}', [BrandController::class, 'destroy']);
 
-    // Quản lý Đơn hàng (Orders)
+    // Quản lý Đơn hàng (Orders) - Hỗ trợ cả 2 dạng đường dẫn để tương thích tuyệt đối với Frontend
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+
+    Route::get('/admin/orders', [OrderController::class, 'index']);
+    Route::get('/admin/orders/{id}', [OrderController::class, 'show']);
+    Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
 });

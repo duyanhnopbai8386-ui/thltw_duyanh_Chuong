@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('slug', 150)->unique();
             $table->text('description')->nullable();
             $table->boolean('status')->default(true);
+            $table->softDeletes(); // Thêm dòng này để hỗ trợ thùng rác
             $table->timestamps();
         });
     }

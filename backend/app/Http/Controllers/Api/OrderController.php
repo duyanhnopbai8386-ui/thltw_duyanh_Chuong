@@ -14,7 +14,7 @@ class OrderController extends Controller
     // 1. Danh sách đơn hàng (Dành cho Admin)
     public function index()
     {
-        $orders = Order::with(['items', 'user'])
+        $orders = Order::with(['items.product', 'user'])
             ->latest()
             ->get();
 
@@ -84,7 +84,7 @@ class OrderController extends Controller
                 'customer_address' => $validated['customer_address'],
                 'note' => $validated['note'] ?? null,
                 'total_price' => $totalPrice,
-                'status' => 'pending',
+                'status' => 'pending', // Mặc định là Chờ xử lý
             ]);
 
             foreach ($orderItemsData as $itemData) {
@@ -94,25 +94,33 @@ class OrderController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Đặt hàng thành công!',
-                'data' => $order->load('items')
+                'data' => $order->load('items.product')
             ], 201);
         });
     }
 
-    // 4. Sửa trạng thái đơn hàng (Dành cho Admin)
+    // 4. Sửa trạng thái đơn hàng (Dành cho Admin: pending -> shipping/processing -> completed -> cancelled)
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:pending,processing,completed,cancelled',
+        $validated = $request->validate([
+            'status' => 'required|in:pending,shipping,processing,completed,cancelled',
         ]);
 
-        $order = Order::findOrFail($id);
-        $order->update(['status' => $request->status]);
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Không tìm thấy đơn hàng'
+            ], 404);
+        }
+
+        $order->update(['status' => $validated['status']]);
 
         return response()->json([
             'status' => true,
             'message' => 'Cập nhật trạng thái đơn hàng thành công',
-            'data' => $order
+            'data' => $order->load(['items.product', 'user'])
         ], 200);
     }
 
@@ -120,7 +128,7 @@ class OrderController extends Controller
     public function myOrders(Request $request)
     {
         $userId = $request->user()->id;
-        $orders = Order::with('items')
+        $orders = Order::with('items.product')
             ->where('user_id', $userId)
             ->latest()
             ->get();
