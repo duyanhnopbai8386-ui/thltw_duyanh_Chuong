@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\PostController;
 
 // --- API XÁC THỰC TÀI KHOẢN (Public) ---
 Route::post('/register', [AuthController::class, 'register']);
@@ -21,6 +23,9 @@ Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('i
 
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/brands/{brand}', [BrandController::class, 'show'])->whereNumber('brand');
+
+Route::get('/posts', [PostController::class, 'index']);
+Route::get('/posts/{id}', [PostController::class, 'show']);
 
 // Đặt hàng & Tra cứu đơn hàng (Khách mua hàng)
 Route::post('/orders', [OrderController::class, 'store']);
@@ -72,4 +77,18 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/orders', [OrderController::class, 'index']);
     Route::get('/admin/orders/{id}', [OrderController::class, 'show']);
     Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
+
+    // Quản lý Người dùng (Users)
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+    Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
+
+    // Quản lý Bài viết (Posts)
+    Route::get('/posts/trash', [PostController::class, 'trash']);
+    Route::post('/posts/{id}/restore', [PostController::class, 'restore']);
+    Route::delete('/posts/{id}/force-delete', [PostController::class, 'forceDelete']);
+    Route::post('/posts', [PostController::class, 'store']);
+    Route::put('/posts/{id}', [PostController::class, 'update']);
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
 });

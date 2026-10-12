@@ -46,6 +46,8 @@ export default function AdminLayout({ children }) {
         { name: 'Quản lý Danh mục', href: '/admin/categories', icon: '📁' },
         { name: 'Quản lý Thương hiệu', href: '/admin/brands', icon: '🏷️' },
         { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: '🛒' },
+        { name: 'Quản lý Người dùng', href: '/admin/users', icon: '👥' },
+        { name: 'Quản lý Bài viết', href: '/admin/posts', icon: '📝' },
     ];
 
     return (

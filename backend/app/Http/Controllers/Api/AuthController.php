@@ -23,6 +23,13 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        if ($user->status === 'blocked') {
+            return response()->json([
+                'message' => 'Tài khoản của bạn đã bị khóa bởi Quản trị viên!'
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

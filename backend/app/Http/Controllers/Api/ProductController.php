@@ -11,11 +11,12 @@ use Illuminate\Http\Response;
 
 class ProductController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
+        $limit = $request->query('per_page', $request->query('limit', 10));
         $products = Product::with(['brand', 'category'])
             ->latest()
-            ->get(); // e lấy tất cả sp nếu theo slice thì paginate(12);
+            ->paginate($limit);
 
         return ProductResource::collection($products);
     }
@@ -36,13 +37,14 @@ class ProductController extends Controller
             'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'price' => ['required', 'numeric', 'min:0'],
-            'sale_price' => ['nullable', 'numeric', 'min:0'],
+            'sale_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
             'stock' => ['nullable', 'integer', 'min:0'],
             'status' => ['nullable', 'boolean'],
             'description' => ['nullable', 'string'],
         ], [
             'name.unique' => 'Tên sản phẩm này đã tồn tại, vui lòng chọn tên khác!',
             'slug.unique' => 'Đường dẫn (slug) sản phẩm đã tồn tại, vui lòng chọn slug khác!',
+            'sale_price.lt' => 'Giá khuyến mãi phải nhỏ hơn giá bán gốc của sản phẩm!',
         ]);
 
         // Xử lý upload ảnh
@@ -60,6 +62,7 @@ class ProductController extends Controller
     public function update(Request $request, $id): ProductResource
     {
         $product = Product::findOrFail($id);
+        $targetPrice = $request->has('price') ? $request->price : $product->price;
 
         $validated = $request->validate([
             'brand_id' => ['sometimes', 'nullable', 'exists:brands,id'],
@@ -80,13 +83,14 @@ class ProductController extends Controller
             ],
             'image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'sale_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'sale_price' => ['sometimes', 'nullable', 'numeric', 'min:0', 'lt:' . $targetPrice],
             'stock' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'status' => ['sometimes', 'nullable', 'boolean'],
             'description' => ['sometimes', 'nullable', 'string'],
         ], [
             'name.unique' => 'Tên sản phẩm này đã tồn tại, vui lòng chọn tên khác!',
             'slug.unique' => 'Đường dẫn (slug) sản phẩm đã tồn tại, vui lòng chọn slug khác!',
+            'sale_price.lt' => 'Giá khuyến mãi phải nhỏ hơn giá bán gốc của sản phẩm!',
         ]);
 
         // Xử lý upload ảnh khi sửa

@@ -12,6 +12,7 @@ export default function AdminProductsPage() {
     const [activeTab, setActiveTab] = useState('list'); // 'list' hoặc 'trash'
     const [loading, setLoading] = useState(false);
     const [editId, setEditId] = useState(null);
+    const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
     const router = useRouter();
 
     // Form state
@@ -26,18 +27,31 @@ export default function AdminProductsPage() {
     });
     const [imageFile, setImageFile] = useState(null);
 
-    // 1. Tải danh sách sản phẩm, danh mục, thương hiệu và thùng rác
-    const fetchData = async () => {
+    // 1. Tải danh sách sản phẩm (có phân trang), danh mục, thương hiệu và thùng rác
+    const fetchData = async (page = 1) => {
         try {
             const [prodRes, catRes, brandRes, trashRes] = await Promise.all([
-                api.get('/products'),
-                api.get('/categories'),
+                api.get(`/products?page=${page}&per_page=10`),
+                api.get('/categories?limit=100'),
                 api.get('/brands'),
                 api.get('/products/trash').catch(() => ({ data: { data: [] } }))
             ]);
-            setProducts(prodRes.data.data || prodRes.data);
-            setCategories(catRes.data.data || catRes.data);
-            setBrands(brandRes.data.data || brandRes.data);
+            setProducts(prodRes.data.data || prodRes.data || []);
+            if (prodRes.data.meta) {
+                setPagination({
+                    current_page: prodRes.data.meta.current_page,
+                    last_page: prodRes.data.meta.last_page,
+                    total: prodRes.data.meta.total,
+                });
+            } else if (prodRes.data.current_page) {
+                setPagination({
+                    current_page: prodRes.data.current_page,
+                    last_page: prodRes.data.last_page,
+                    total: prodRes.data.total,
+                });
+            }
+            setCategories(catRes.data.data || catRes.data || []);
+            setBrands(brandRes.data.data || brandRes.data || []);
             setTrashProducts(trashRes.data.data || trashRes.data || []);
         } catch (err) {
             console.error("Lỗi tải dữ liệu sản phẩm:", err);
@@ -55,6 +69,13 @@ export default function AdminProductsPage() {
     // 2. Thêm hoặc Sửa sản phẩm (sử dụng FormData để gửi kèm file ảnh)
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Ràng buộc nghiệp vụ: Giá khuyến mãi phải nhỏ hơn giá gốc
+        if (form.sale_price && Number(form.sale_price) >= Number(form.price)) {
+            alert('Giá khuyến mãi phải nhỏ hơn giá bán gốc của sản phẩm!');
+            return;
+        }
+
         setLoading(true);
         try {
             const formData = new FormData();
@@ -361,7 +382,16 @@ export default function AdminProductsPage() {
                                             <td className="p-4 font-semibold text-gray-900">{p.name}</td>
                                             <td className="p-4 text-gray-600">{p.category?.name || '---'}</td>
                                             <td className="p-4 text-gray-600">{p.brand?.name || '---'}</td>
-                                            <td className="p-4 text-blue-600 font-semibold">{Number(p.price).toLocaleString('vi-VN')} đ</td>
+                                            <td className="p-4">
+                                                {p.sale_price ? (
+                                                    <div>
+                                                        <span className="text-red-600 font-bold block">{Number(p.sale_price).toLocaleString('vi-VN')} đ</span>
+                                                        <span className="text-xs text-gray-400 line-through">{Number(p.price).toLocaleString('vi-VN')} đ</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-blue-600 font-semibold">{Number(p.price).toLocaleString('vi-VN')} đ</span>
+                                                )}
+                                            </td>
                                             <td className="p-4">{p.stock ?? 0}</td>
                                             <td className="p-4 text-center space-x-3">
                                                 <button
@@ -389,6 +419,44 @@ export default function AdminProductsPage() {
                                 )}
                             </tbody>
                         </table>
+
+                        {/* Thanh phân trang Pagination */}
+                        {pagination.last_page > 1 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 border-t border-gray-200 gap-3">
+                                <span className="text-sm text-gray-600">
+                                    Trang <span className="font-semibold">{pagination.current_page}</span> / <span className="font-semibold">{pagination.last_page}</span> (Tổng {pagination.total} sản phẩm)
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        disabled={pagination.current_page <= 1}
+                                        onClick={() => fetchData(pagination.current_page - 1)}
+                                        className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+                                    >
+                                        ← Trước
+                                    </button>
+                                    {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((pg) => (
+                                        <button
+                                            key={pg}
+                                            onClick={() => fetchData(pg)}
+                                            className={`px-3 py-1.5 text-xs font-medium rounded-lg border ${
+                                                pagination.current_page === pg
+                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {pg}
+                                        </button>
+                                    ))}
+                                    <button
+                                        disabled={pagination.current_page >= pagination.last_page}
+                                        onClick={() => fetchData(pagination.current_page + 1)}
+                                        className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+                                    >
+                                        Sau →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </>
             )}
