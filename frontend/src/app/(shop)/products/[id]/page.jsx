@@ -1,14 +1,13 @@
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import ProductCard from '@/components/shop/product/ProductCard';
 
-export default function ProductDetailPage({ params }) {
-  // Unwrap Next.js 15 dynamic params
-  const unwrappedParams = use(params);
-  const productId = unwrappedParams.id;
+export default function ProductDetailPage({ params: propParams }) {
   const router = useRouter();
+  const routeParams = useParams();
+  const productId = routeParams?.id || propParams?.id;
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -49,41 +48,58 @@ export default function ProductDetailPage({ params }) {
 
   // Thêm vào giỏ hàng
   const handleAddToCart = (redirectCart = false) => {
-    if (!product) return;
+    if (!product) {
+      alert('Chưa tải được thông tin sản phẩm, vui lòng thử lại!');
+      return;
+    }
 
     try {
-      const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      const existingIndex = currentCart.findIndex((item) => item.id === product.id);
+      let currentCart = [];
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('cart') : null;
+        const parsed = raw ? JSON.parse(raw) : [];
+        currentCart = Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        currentCart = [];
+      }
+
+      const validCart = currentCart.filter(item => item && item.id);
+      const existingIndex = validCart.findIndex((item) => Number(item.id) === Number(product.id));
 
       const actualPrice = product.sale_price && product.sale_price > 0 && product.sale_price < product.price
         ? product.sale_price
         : product.price;
 
+      const qtyToAdd = Math.max(1, Number(quantity) || 1);
+
       if (existingIndex > -1) {
-        currentCart[existingIndex].quantity = (currentCart[existingIndex].quantity || 1) + quantity;
+        validCart[existingIndex].quantity = (Number(validCart[existingIndex].quantity) || 1) + qtyToAdd;
       } else {
-        currentCart.push({
+        validCart.push({
           id: product.id,
           name: product.name,
           price: actualPrice,
           original_price: product.price,
           sale_price: product.sale_price,
           image: product.image,
-          quantity: quantity,
+          quantity: qtyToAdd,
         });
       }
 
-      localStorage.setItem('cart', JSON.stringify(currentCart));
-      window.dispatchEvent(new Event('cartUpdated'));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cart', JSON.stringify(validCart));
+        window.dispatchEvent(new Event('cartUpdated'));
+      }
 
       if (redirectCart) {
         router.push('/cart');
       } else {
         setAddedNotice(true);
-        setTimeout(() => setAddedNotice(false), 2500);
+        setTimeout(() => setAddedNotice(false), 3000);
       }
     } catch (e) {
       console.error('Lỗi thêm giỏ hàng:', e);
+      alert('Có lỗi xảy ra: ' + e.message);
     }
   };
 

@@ -19,8 +19,15 @@ export default function CartPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
-        setItems(storedCart);
+        let rawCart = [];
+        try {
+          const raw = localStorage.getItem('cart');
+          const parsed = raw ? JSON.parse(raw) : [];
+          rawCart = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          rawCart = [];
+        }
+        setItems(rawCart.filter(item => item && item.id));
 
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
@@ -121,7 +128,10 @@ export default function CartPage() {
         setShowCheckout(false);
         router.push('/orders');
       } else {
-        alert(data.message || 'Đặt hàng thất bại, vui lòng kiểm tra lại thông tin!');
+        const errorMsg = data.errors
+          ? Object.values(data.errors).flat().join('\n')
+          : (data.message || 'Đặt hàng thất bại, vui lòng kiểm tra lại thông tin!');
+        alert('Lỗi đặt hàng:\n' + errorMsg);
       }
     } catch (err) {
       console.error('Lỗi đặt hàng:', err);
