@@ -116,7 +116,7 @@ export default function ProductDetailPage({ params: propParams }) {
     return (
       <div className="bg-[#f5f5f7] min-h-screen py-24 px-6 text-center">
         <div className="max-w-md mx-auto bg-white rounded-3xl p-10 border border-gray-100 shadow-sm">
-          <div className="text-5xl mb-4">⚠️</div>
+          <div className="text-5xl mb-4"></div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Không tìm thấy sản phẩm</h2>
           <p className="text-xs text-gray-500 mb-6">Sản phẩm này có thể đã bị gỡ hoặc không tồn tại trên hệ thống.</p>
           <Link href="/products" className="bg-black text-white text-xs font-semibold px-6 py-3 rounded-full hover:bg-gray-800 transition">
@@ -280,7 +280,7 @@ export default function ProductDetailPage({ params: propParams }) {
               <div>
                 {addedNotice && (
                   <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center justify-between animate-in fade-in">
-                    <span>🎉 Đã thêm <strong>{quantity} x {product.name}</strong> vào giỏ hàng!</span>
+                    <span>Đã thêm <strong>{quantity} x {product.name}</strong> vào giỏ hàng!</span>
                     <Link href="/cart" className="font-bold underline hover:text-emerald-900">
                       Xem giỏ &gt;
                     </Link>
@@ -292,13 +292,13 @@ export default function ProductDetailPage({ params: propParams }) {
                     onClick={() => handleAddToCart(false)}
                     className="flex-1 bg-black hover:bg-gray-800 text-white py-3.5 rounded-full font-semibold text-xs sm:text-sm active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
                   >
-                    <span>🛒 Thêm vào giỏ</span>
+                    <span>Thêm vào giỏ</span>
                   </button>
                   <button
                     onClick={() => handleAddToCart(true)}
                     className="flex-1 bg-[#0071e3] hover:bg-[#0077ED] text-white py-3.5 rounded-full font-semibold text-xs sm:text-sm active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
                   >
-                    <span>⚡ Mua ngay</span>
+                    <span> Mua ngay</span>
                   </button>
                 </div>
               </div>

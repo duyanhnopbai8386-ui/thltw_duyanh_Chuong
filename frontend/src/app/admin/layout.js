@@ -13,10 +13,10 @@ export default function AdminLayout({ children }) {
             return;
         }
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
         let user = null;
         try {
-            user = JSON.parse(localStorage.getItem('user') || 'null');
+            user = JSON.parse(localStorage.getItem('admin_user') || localStorage.getItem('user') || 'null');
         } catch (e) {}
 
         if (!token || user?.role !== 'admin') {
@@ -80,8 +80,8 @@ export default function AdminLayout({ children }) {
                 <div className="p-4 border-t border-gray-800">
                     <button
                         onClick={() => {
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('user');
+                            localStorage.removeItem('admin_token');
+                            localStorage.removeItem('admin_user');
                             window.location.replace('/admin/login');
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded-lg transition-colors"

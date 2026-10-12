@@ -13,7 +13,7 @@ api.interceptors.request.use(
     (config) => {
         // Kiểm tra xem đang chạy ở môi trường trình duyệt (client-side) không
         if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
