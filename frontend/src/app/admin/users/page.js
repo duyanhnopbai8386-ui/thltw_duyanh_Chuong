@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function AdminUsersPage() {
     const [users, setUsers] = useState([]);
     const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+    const [perPage, setPerPage] = useState(5);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
@@ -18,12 +19,12 @@ export default function AdminUsersPage() {
     const router = useRouter();
 
     // 1. Tải danh sách người dùng
-    const fetchUsers = async (page = 1) => {
+    const fetchUsers = async (page = 1, currentPerPage = perPage) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
                 page,
-                per_page: 10,
+                per_page: currentPerPage,
             });
             if (search) params.append('search', search);
             if (roleFilter) params.append('role', roleFilter);
@@ -225,13 +226,13 @@ export default function AdminUsersPage() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="p-4">
+                                        <td className="p-4 whitespace-nowrap">
                                             {isBlocked ? (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                                                <span className="whitespace-nowrap inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
                                                     🔒 Đã bị khóa
                                                 </span>
                                             ) : (
-                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                                                <span className="whitespace-nowrap inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
                                                     🟢 Hoạt động
                                                 </span>
                                             )}
@@ -283,43 +284,57 @@ export default function AdminUsersPage() {
                     </tbody>
                 </table>
 
-                {/* Thanh phân trang Pagination */}
-                {pagination.last_page > 1 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 border-t border-gray-200 gap-3">
-                        <span className="text-sm text-gray-600">
-                            Trang <span className="font-semibold">{pagination.current_page}</span> / <span className="font-semibold">{pagination.last_page}</span> (Tổng {pagination.total} người dùng)
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                disabled={pagination.current_page <= 1}
-                                onClick={() => fetchUsers(pagination.current_page - 1)}
-                                className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40"
-                            >
-                                ← Trước
-                            </button>
-                            {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((pg) => (
-                                <button
-                                    key={pg}
-                                    onClick={() => fetchUsers(pg)}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-lg border ${
-                                        pagination.current_page === pg
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'bg-white text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    {pg}
-                                </button>
-                            ))}
-                            <button
-                                disabled={pagination.current_page >= pagination.last_page}
-                                onClick={() => fetchUsers(pagination.current_page + 1)}
-                                className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40"
-                            >
-                                Sau →
-                            </button>
-                        </div>
+                {/* Thanh phân trang Pagination - Luôn hiển thị ở chân bảng */}
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 border-t border-gray-200 gap-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <span>Hiển thị</span>
+                        <select
+                            value={perPage}
+                            onChange={(e) => {
+                                const newPerPage = Number(e.target.value);
+                                setPerPage(newPerPage);
+                                fetchUsers(1, newPerPage);
+                            }}
+                            className="px-2 py-1 border border-gray-300 rounded-lg bg-white text-xs font-semibold focus:outline-none"
+                        >
+                            <option value={2}>2 / trang (Demo)</option>
+                            <option value={5}>5 / trang</option>
+                            <option value={10}>10 / trang</option>
+                            <option value={20}>20 / trang</option>
+                        </select>
+                        <span>(Tổng <strong>{pagination.total}</strong> người dùng)</span>
                     </div>
-                )}
+
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            disabled={pagination.current_page <= 1}
+                            onClick={() => fetchUsers(pagination.current_page - 1, perPage)}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 transition"
+                        >
+                            ← Trước
+                        </button>
+                        {Array.from({ length: Math.max(pagination.last_page || 1, 1) }, (_, i) => i + 1).map((pg) => (
+                            <button
+                                key={pg}
+                                onClick={() => fetchUsers(pg, perPage)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition ${
+                                    pagination.current_page === pg
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                }`}
+                            >
+                                {pg}
+                            </button>
+                        ))}
+                        <button
+                            disabled={pagination.current_page >= pagination.last_page}
+                            onClick={() => fetchUsers(pagination.current_page + 1, perPage)}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 transition"
+                        >
+                            Sau →
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* KHUNG CHI TIẾT NGƯỜI DÙNG & DANH SÁCH ĐƠN HÀNG CỦA HỌ (TRÊN CÙNG 1 TRANG) */}
