@@ -26,6 +26,12 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id');
     }
 
+    // Quan hệ: Một danh mục có nhiều sản phẩm
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
     // Scope: Lọc danh mục đang hoạt động (status = 1)
     public function scopeActive(Builder $query): void
     {

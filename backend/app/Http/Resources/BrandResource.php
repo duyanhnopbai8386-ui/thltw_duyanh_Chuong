@@ -20,6 +20,7 @@ class BrandResource extends JsonResource
             'slug' => $this->slug,
             'image' => $this->image,
             'status' => $this->status,
+            'products_count' => $this->products_count ?? $this->products()->count(),
         ];
     }
 }

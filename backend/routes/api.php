@@ -25,7 +25,7 @@ Route::get('/brands/{brand}', [BrandController::class, 'show'])->whereNumber('br
 // Đặt hàng & Tra cứu đơn hàng (Khách mua hàng)
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/lookup', [OrderController::class, 'lookup']);
-
+ 
 // --- API DÀNH CHO USER ĐÃ ĐĂNG NHẬP (auth:sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

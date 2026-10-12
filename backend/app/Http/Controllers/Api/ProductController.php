@@ -32,20 +32,22 @@ class ProductController extends Controller
         $validated = $request->validate([
             'brand_id' => ['nullable', 'exists:brands,id'],
             'category_id' => ['nullable', 'exists:categories,id'],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:products,name'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'], // Đổi thành file ảnh
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'price' => ['required', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'stock' => ['nullable', 'integer', 'min:0'],
             'status' => ['nullable', 'boolean'],
             'description' => ['nullable', 'string'],
+        ], [
+            'name.unique' => 'Tên sản phẩm này đã tồn tại, vui lòng chọn tên khác!',
+            'slug.unique' => 'Đường dẫn (slug) sản phẩm đã tồn tại, vui lòng chọn slug khác!',
         ]);
 
         // Xử lý upload ảnh
-        if ($request->hasFile('image')) { // xem có phải file guiwrleen không
-            $path = $request->file('image')->store('products', 'public'); // lệnh store sẽ tự động tải vật lý đó vào máy chủ 
-            // rồi gọi create
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
             $validated['image'] = '/storage/' . $path;
         }
 
@@ -62,14 +64,29 @@ class ProductController extends Controller
         $validated = $request->validate([
             'brand_id' => ['sometimes', 'nullable', 'exists:brands,id'],
             'category_id' => ['sometimes', 'nullable', 'exists:categories,id'],
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'slug' => ['sometimes', 'nullable', 'string', 'max:255', \Illuminate\Validation\Rule::unique('products')->ignore($product->id)],
-            'image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'], // Đổi thành file ảnh
+            'name' => [
+                'sometimes', 
+                'required', 
+                'string', 
+                'max:255', 
+                \Illuminate\Validation\Rule::unique('products', 'name')->ignore($product->id)
+            ],
+            'slug' => [
+                'sometimes', 
+                'nullable', 
+                'string', 
+                'max:255', 
+                \Illuminate\Validation\Rule::unique('products', 'slug')->ignore($product->id)
+            ],
+            'image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'sale_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'stock' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'status' => ['sometimes', 'nullable', 'boolean'],
             'description' => ['sometimes', 'nullable', 'string'],
+        ], [
+            'name.unique' => 'Tên sản phẩm này đã tồn tại, vui lòng chọn tên khác!',
+            'slug.unique' => 'Đường dẫn (slug) sản phẩm đã tồn tại, vui lòng chọn slug khác!',
         ]);
 
         // Xử lý upload ảnh khi sửa
@@ -98,7 +115,7 @@ class ProductController extends Controller
     // Danh sách trong thùng rác
     public function trash(): AnonymousResourceCollection
     {
-        $products = Product::onlyTrashed()
+        $products = Product::onlyTrashed() // xem thùng rác
             ->with(['brand', 'category'])
             ->latest()
             ->get();
