@@ -43,6 +43,7 @@ export default function RegisterPage() {
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
+        window.dispatchEvent(new Event('authChange'));
         alert('🎉 Đăng ký tài khoản thành công!');
         router.push('/orders');
       } else {

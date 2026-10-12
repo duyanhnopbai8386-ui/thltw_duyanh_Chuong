@@ -2,10 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { mockCartItems } from '@/data/cart';
 
 export default function CartPage() {
-  const [items, setItems] = useState(mockCartItems);
+  const [items, setItems] = useState([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -16,35 +15,62 @@ export default function CartPage() {
   });
   const router = useRouter();
 
+  // 1. Tải giỏ hàng từ localStorage & thông tin user đã đăng nhập
   useEffect(() => {
-    // Tải sản phẩm thật từ API để giỏ hàng liên kết đúng ID sản phẩm đang có trong Database
-    fetch('http://127.0.0.1:8000/api/products')
-      .then(res => res.json())
-      .then(data => {
-        const prodList = data.data || [];
-        if (prodList.length > 0) {
-          const initialCart = prodList.slice(0, 2).map((p, idx) => ({
-            id: p.id,
-            name: p.name,
-            price: Number(p.sale_price || p.price),
-            image: p.image,
-            quantity: idx === 0 ? 2 : 1
+    if (typeof window !== 'undefined') {
+      try {
+        const storedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+        setItems(storedCart);
+
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setForm(prev => ({
+            ...prev,
+            customer_name: user.name || '',
+            customer_phone: user.phone || '',
           }));
-          setItems(initialCart);
         }
-      })
-      .catch(err => console.error("Lỗi tải sản phẩm cho giỏ hàng:", err));
+      } catch (e) {
+        console.error("Lỗi đọc giỏ hàng:", e);
+      }
+    }
   }, []);
 
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 0 ? 30000 : 0;
+  // Cập nhật giỏ hàng vào localStorage và dispatch event
+  const saveCart = (newItems) => {
+    setItems(newItems);
+    localStorage.setItem('cart', JSON.stringify(newItems));
+    window.dispatchEvent(new Event('cartUpdated'));
+  };
+
+  const updateQuantity = (id, newQty) => {
+    if (newQty <= 0) {
+      removeItem(id);
+      return;
+    }
+    const updated = items.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+    saveCart(updated);
+  };
+
+  const removeItem = (id) => {
+    const updated = items.filter(item => item.id !== id);
+    saveCart(updated);
+  };
+
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * (item.quantity || 1)), 0);
+  const shipping = subtotal > 0 ? (subtotal >= 1000000 ? 0 : 30000) : 0;
   const total = subtotal + shipping;
 
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
+    if (items.length === 0) {
+      alert('Giỏ hàng của bạn đang trống!');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Chuẩn bị dữ liệu gửi lên API orders
       const payload = {
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
@@ -74,6 +100,12 @@ export default function CartPage() {
       const data = await res.json();
 
       if (res.ok) {
+        // Xóa giỏ hàng sau khi đặt thành công
+        localStorage.removeItem('cart');
+        setItems([]);
+        window.dispatchEvent(new Event('cartUpdated'));
+
+        // Lưu đơn hàng guest nếu chưa đăng nhập
         if (typeof window !== 'undefined') {
           const guestOrders = JSON.parse(localStorage.getItem('guest_orders') || '[]');
           if (data.data?.id && !guestOrders.includes(data.data.id)) {
@@ -84,7 +116,8 @@ export default function CartPage() {
             localStorage.setItem('last_customer_phone', form.customer_phone);
           }
         }
-        alert('🎉 Đặt hàng thành công! Đơn hàng của bạn đã được ghi nhận.');
+
+        alert('🎉 Đặt hàng thành công! Đơn hàng của bạn đã được tiếp nhận và xử lý.');
         setShowCheckout(false);
         router.push('/orders');
       } else {
@@ -101,95 +134,165 @@ export default function CartPage() {
   return (
     <div className="bg-[#f5f5f7] min-h-screen pt-12 pb-24">
       <div className="max-w-5xl mx-auto px-6">
-        <div className="flex items-center justify-between mb-10">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">Giỏ hàng.</h1>
-          <Link href="/orders" className="text-sm text-blue-600 hover:underline font-medium">
-            📋 Xem đơn hàng đã mua
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Giỏ hàng của bạn.</h1>
+            <p className="text-xs text-gray-500 mt-1">Kiểm tra các sản phẩm đã chọn trước khi thanh toán</p>
+          </div>
+          <Link href="/orders" className="text-xs text-blue-600 hover:underline font-semibold bg-blue-50 px-3.5 py-2 rounded-full">
+            📦 Xem đơn hàng đã mua
           </Link>
         </div>
         
-        <div className="flex flex-col lg:flex-row gap-10">
-          {/* Cart Items List */}
-          <div className="w-full lg:w-2/3 space-y-4">
-            {items.map(item => (
-              <div key={item.id} className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-gray-100 flex flex-col sm:flex-row items-center gap-6 group hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] transition-all duration-300">
-                
-                {/* Image Placeholder */}
-                <div className="w-24 h-24 bg-[#fbfbfd] rounded-2xl flex items-center justify-center text-xs text-gray-400 shrink-0">
-                  📦
-                </div>
-                
-                {/* Item Details */}
-                <div className="flex-grow text-center sm:text-left">
-                  <h3 className="font-semibold text-lg text-gray-900">{item.name}</h3>
-                  <p className="text-gray-500 mt-1">{item.price.toLocaleString('vi-VN')}đ</p>
-                </div>
-                
-                {/* Quantity Controls */}
-                <div className="flex items-center bg-[#f5f5f7] rounded-full px-1 py-1">
-                  <span className="w-10 text-center font-semibold text-gray-900 text-sm">
-                    x{item.quantity}
-                  </span>
-                </div>
-                
-                {/* Total & Remove */}
-                <div className="flex flex-col items-center sm:items-end gap-2 shrink-0 min-w-[100px]">
-                  <span className="font-semibold text-gray-900 text-lg">
-                    {(item.price * item.quantity).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              </div>
-            ))}
+        {items.length === 0 ? (
+          /* GIỎ TRỐNG */
+          <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm">
+            <div className="text-6xl mb-4">🛒</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Giỏ hàng của bạn đang trống</h2>
+            <p className="text-xs text-gray-500 mb-6 max-w-sm mx-auto">
+              Hãy khám phá các thiết bị công nghệ hấp dẫn và chọn cho mình sản phẩm ưng ý nhất.
+            </p>
+            <Link
+              href="/products"
+              className="bg-black text-white text-xs font-semibold px-6 py-3 rounded-full hover:bg-gray-800 transition inline-block"
+            >
+              Khám phá sản phẩm ngay &gt;
+            </Link>
           </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8">
+            
+            {/* Cột trái: Danh sách sản phẩm trong giỏ */}
+            <div className="w-full lg:w-2/3 space-y-3">
+              {items.map(item => {
+                const itemImg = item.image
+                  ? (item.image.startsWith('http') ? item.image : `http://127.0.0.1:8000${item.image}`)
+                  : null;
 
-          {/* Order Summary (Sticky Glassmorphism) */}
-          <div className="w-full lg:w-1/3">
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] border border-white p-8 sticky top-28">
-              <h2 className="text-2xl font-semibold tracking-tight text-gray-900 mb-8">Tóm tắt</h2>
-              
-              <div className="space-y-4 text-[15px]">
-                <div className="flex justify-between text-gray-600">
-                  <span>Tạm tính</span>
-                  <span className="text-gray-900 font-medium">{subtotal.toLocaleString('vi-VN')}đ</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Phí vận chuyển</span>
-                  <span className="text-gray-900 font-medium">{shipping.toLocaleString('vi-VN')}đ</span>
-                </div>
-                <div className="border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-900">Tổng cộng</span>
-                  <span className="text-2xl font-bold text-gray-900">{total.toLocaleString('vi-VN')}đ</span>
-                </div>
-              </div>
+                return (
+                  <div key={item.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex items-center gap-4 transition hover:shadow-md">
+                    
+                    {/* Ảnh sản phẩm */}
+                    <div className="w-20 h-20 bg-[#fbfbfd] rounded-xl flex items-center justify-center p-2 shrink-0 border border-gray-100">
+                      {itemImg ? (
+                        <img src={itemImg} alt={item.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-2xl">📦</span>
+                      )}
+                    </div>
+                    
+                    {/* Thông tin */}
+                    <div className="flex-grow min-w-0">
+                      <Link href={`/products/${item.id}`} className="font-semibold text-sm text-gray-900 hover:text-blue-600 transition truncate block">
+                        {item.name}
+                      </Link>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {Number(item.price).toLocaleString('vi-VN')} đ
+                      </p>
+                    </div>
+                    
+                    {/* Tăng / Giảm số lượng */}
+                    <div className="flex items-center border border-gray-200 rounded-full bg-gray-50">
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-black font-bold text-xs"
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-bold text-xs text-gray-900">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-black font-bold text-xs"
+                      >
+                        +
+                      </button>
+                    </div>
+                    
+                    {/* Tổng tiền món */}
+                    <div className="text-right shrink-0 min-w-[90px]">
+                      <div className="font-bold text-gray-900 text-sm">
+                        {(Number(item.price) * item.quantity).toLocaleString('vi-VN')} đ
+                      </div>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="text-[11px] text-red-500 hover:text-red-700 underline mt-1"
+                      >
+                        Xóa
+                      </button>
+                    </div>
 
-              <button 
-                onClick={() => setShowCheckout(true)}
-                className="w-full bg-[#0071e3] text-white font-medium text-[15px] py-3.5 rounded-full mt-8 hover:bg-[#0077ED] active:scale-95 transition-all shadow-md"
-              >
-                Tiến hành Đặt hàng
-              </button>
-              
-              <div className="text-center mt-6">
-                <Link href="/products" className="text-sm text-[#0071e3] hover:underline">
-                  Tiếp tục mua sắm
+                  </div>
+                );
+              })}
+
+              <div className="pt-2">
+                <Link href="/products" className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                  &larr; Tiếp tục chọn thêm sản phẩm khác
                 </Link>
               </div>
             </div>
+
+            {/* Cột phải: Tóm tắt đơn hàng & Nút thanh toán */}
+            <div className="w-full lg:w-1/3">
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sticky top-24">
+                <h2 className="text-base font-bold text-gray-900 mb-4 pb-3 border-b border-gray-100">
+                  Tóm tắt đơn hàng
+                </h2>
+                
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Tạm tính</span>
+                    <span className="text-gray-900 font-semibold">{subtotal.toLocaleString('vi-VN')} đ</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Phí vận chuyển</span>
+                    <span className="text-gray-900 font-semibold">
+                      {shipping === 0 ? <span className="text-emerald-600">Miễn phí</span> : `${shipping.toLocaleString('vi-VN')} đ`}
+                    </span>
+                  </div>
+                  {shipping === 0 && (
+                    <p className="text-[10px] text-emerald-600 bg-emerald-50 p-2 rounded-lg">
+                      🎉 Đơn hàng trên 1.000.000đ được Miễn phí giao hàng toàn quốc!
+                    </p>
+                  )}
+                  <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
+                    <span className="text-sm font-bold text-gray-900">Tổng cộng</span>
+                    <span className="text-lg font-extrabold text-red-600">{total.toLocaleString('vi-VN')} đ</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowCheckout(true)}
+                  className="w-full bg-[#0071e3] text-white font-semibold text-xs sm:text-sm py-3.5 rounded-full mt-6 hover:bg-[#0077ED] active:scale-95 transition-all shadow-md"
+                >
+                  Tiến hành Đặt hàng
+                </button>
+              </div>
+            </div>
+
           </div>
-        </div>
+        )}
+
       </div>
 
       {/* MODAL CHECKOUT / ĐẶT HÀNG */}
       {showCheckout && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl">
-            <div className="flex items-center justify-between border-b pb-4 mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Thông tin giao hàng</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl">
+            <div className="flex items-center justify-between border-b pb-4 mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Thông tin nhận hàng</h3>
+                <p className="text-xs text-gray-500">Vui lòng điền thông tin để nhân viên giao hàng liên hệ</p>
+              </div>
               <button 
                 onClick={() => setShowCheckout(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
               >
-                &times;
+                ✕
               </button>
             </div>
 
@@ -199,73 +302,75 @@ export default function CartPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Nguyễn Văn A..."
+                  placeholder="Ví dụ: Nguyễn Văn A"
                   value={form.customer_name}
                   onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại liên hệ *</label>
                 <input
                   type="tel"
                   required
-                  placeholder="0912345678..."
+                  placeholder="Ví dụ: 0912345678"
                   value={form.customer_phone}
                   onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Địa chỉ nhận hàng *</label>
-                <input
-                  type="text"
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Địa chỉ giao hàng chi tiết *</label>
+                <textarea
                   required
-                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
+                  rows={2}
+                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
                   value={form.customer_address}
                   onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Ghi chú (tùy chọn)</label>
-                <textarea
-                  rows="2"
-                  placeholder="Giao giờ hành chính, gọi trước khi giao..."
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Ghi chú đơn hàng (Tùy chọn)</label>
+                <input
+                  type="text"
+                  placeholder="Giao trong giờ hành chính, gọi trước khi đến..."
                   value={form.note}
                   onChange={(e) => setForm({ ...form, note: e.target.value })}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                ></textarea>
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
+                />
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-between text-sm">
-                <span className="text-gray-500">Tổng thanh toán:</span>
-                <span className="text-xl font-bold text-blue-600">{total.toLocaleString('vi-VN')}đ</span>
+              {/* Tóm tắt tổng tiền */}
+              <div className="bg-gray-50 p-3.5 rounded-2xl flex justify-between items-center text-xs">
+                <span className="text-gray-600 font-medium">Tổng tiền thanh toán (COD):</span>
+                <span className="text-base font-extrabold text-red-600">{total.toLocaleString('vi-VN')} đ</span>
               </div>
 
-              <div className="flex gap-3 pt-3">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowCheckout(false)}
-                  className="w-1/2 py-3 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-xs font-semibold transition"
                 >
-                  Hủy
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-1/2 bg-[#0071e3] text-white py-3 rounded-full text-sm font-medium hover:bg-[#0077ED] transition disabled:opacity-50"
+                  className="flex-1 bg-[#0071e3] hover:bg-[#0077ED] text-white py-3 rounded-xl text-xs font-semibold transition disabled:opacity-50"
                 >
-                  {loading ? 'Đang gửi...' : 'Xác nhận Đặt hàng'}
+                  {loading ? 'Đang gửi đơn...' : 'Xác nhận Đặt hàng'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -21,6 +21,7 @@ Route::get('/categories/{slug}', [CategoryController::class, 'show'])->where('sl
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
+Route::get('/products/{id}/related', [ProductController::class, 'related'])->whereNumber('id');
 
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/brands/{brand}', [BrandController::class, 'show'])->whereNumber('brand');
@@ -38,6 +39,7 @@ Route::get('/orders/lookup', [OrderController::class, 'lookup']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
 
     // Giỏ hàng (User)
     Route::apiResource('carts', CartController::class);

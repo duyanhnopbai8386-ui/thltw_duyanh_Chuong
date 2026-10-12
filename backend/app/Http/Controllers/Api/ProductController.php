@@ -14,9 +14,80 @@ class ProductController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $limit = $request->query('per_page', $request->query('limit', 10));
-        $products = Product::with(['brand', 'category'])
-            ->latest()
-            ->paginate($limit);
+        $query = Product::with(['brand', 'category']);
+
+        // 1. Tìm kiếm theo tên hoặc mô tả
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // 2. Lọc theo Danh mục
+        if ($categoryId = $request->query('category_id')) {
+            $query->where('category_id', $categoryId);
+        }
+
+        // 3. Lọc theo Thương hiệu
+        if ($brandId = $request->query('brand_id')) {
+            $query->where('brand_id', $brandId);
+        }
+
+        // 4. Lọc theo Khoảng giá
+        if ($request->filled('min_price')) {
+            $minPrice = (float) $request->query('min_price');
+            $query->where(function ($q) use ($minPrice) {
+                $q->where('price', '>=', $minPrice)
+                  ->orWhere('sale_price', '>=', $minPrice);
+            });
+        }
+        if ($request->filled('max_price')) {
+            $maxPrice = (float) $request->query('max_price');
+            $query->where(function ($q) use ($maxPrice) {
+                $q->where('price', '<=', $maxPrice)
+                  ->orWhere('sale_price', '<=', $maxPrice);
+            });
+        }
+
+        // 5. Lọc theo Phân loại trang chủ (type: new, sale, hot, featured)
+        $type = $request->query('type');
+        if ($type === 'sale') {
+            $query->whereNotNull('sale_price')
+                  ->where('sale_price', '>', 0)
+                  ->whereColumn('sale_price', '<', 'price');
+        } elseif ($type === 'hot') {
+            // Hot: ưu tiên sản phẩm có trạng thái bật và số lượng kho lớn hoặc bán chạy
+            $query->where('status', 1)->orderBy('stock', 'desc');
+        } elseif ($type === 'featured') {
+            // Nổi bật: các sản phẩm được chọn lọc
+            $query->where('status', 1)->orderBy('id', 'asc');
+        }
+
+        // 6. Sắp xếp (sort)
+        $sort = $request->query('sort');
+        switch ($sort) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'sale':
+                $query->whereNotNull('sale_price')->where('sale_price', '>', 0)->orderBy('sale_price', 'asc');
+                break;
+            case 'newest':
+            default:
+                if ($type !== 'hot' && $type !== 'featured') {
+                    $query->latest();
+                }
+                break;
+        }
+
+        $products = $query->paginate($limit);
 
         return ProductResource::collection($products);
     }
@@ -26,6 +97,35 @@ class ProductController extends Controller
         $product = Product::with(['brand', 'category'])->findOrFail($id);
 
         return new ProductResource($product);
+    }
+
+    public function related($id): AnonymousResourceCollection
+    {
+        $product = Product::findOrFail($id);
+        $related = Product::with(['brand', 'category'])
+            ->where('id', '!=', $id)
+            ->where(function ($q) use ($product) {
+                if ($product->category_id) {
+                    $q->where('category_id', $product->category_id);
+                }
+                if ($product->brand_id) {
+                    $q->orWhere('brand_id', $product->brand_id);
+                }
+            })
+            ->latest()
+            ->take(4)
+            ->get();
+
+        // Nếu không có cùng danh mục/thương hiệu, lấy 4 sản phẩm bất kỳ khác
+        if ($related->isEmpty()) {
+            $related = Product::with(['brand', 'category'])
+                ->where('id', '!=', $id)
+                ->latest()
+                ->take(4)
+                ->get();
+        }
+
+        return ProductResource::collection($related);
     }
 
     public function store(Request $request)
