@@ -120,6 +120,15 @@ class CategoryController extends Controller
             ], 404);
         }
 
+        // RÀNG BUỘC TOÀN VẸN: Không cho xóa nếu danh mục đang chứa sản phẩm
+        $productCount = $category->products()->count();
+        if ($productCount > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => "Không thể xóa danh mục này vì đang có {$productCount} sản phẩm trực thuộc. Vui lòng xóa hoặc chuyển sản phẩm trước!"
+            ], 422);
+        }
+
         $category->delete();
 
         return response()->json([
@@ -171,6 +180,15 @@ class CategoryController extends Controller
                 'status' => false,
                 'message' => 'Không tìm thấy danh mục trong thùng rác'
             ], 404);
+        }
+
+        // RÀNG BUỘC: Không cho xóa vĩnh viễn nếu còn sản phẩm trong CSDL
+        $productCount = $category->products()->withTrashed()->count();
+        if ($productCount > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => "Không thể xóa vĩnh viễn! Danh mục này đang gắn với {$productCount} sản phẩm trong hệ thống."
+            ], 422);
         }
 
         $category->forceDelete();

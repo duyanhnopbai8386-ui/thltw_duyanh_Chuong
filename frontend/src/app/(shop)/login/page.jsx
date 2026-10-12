@@ -32,6 +32,7 @@ export default function LoginPage() {
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
+        window.dispatchEvent(new Event('authChange'));
         alert('🎉 Đăng nhập thành công!');
         router.push(redirectPath);
       } else {

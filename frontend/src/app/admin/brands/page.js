@@ -258,6 +258,7 @@ export default function AdminBrandsPage() {
                                     <th className="p-4">Logo</th>
                                     <th className="p-4">Tên thương hiệu</th>
                                     <th className="p-4">Slug</th>
+                                    <th className="p-4">Số lượng SP</th>
                                     <th className="p-4 text-center">Hành động</th>
                                 </tr>
                             </thead>
@@ -280,6 +281,11 @@ export default function AdminBrandsPage() {
                                             </td>
                                             <td className="p-4 font-semibold text-gray-900">{b.name}</td>
                                             <td className="p-4 text-gray-500 font-mono text-xs">{b.slug}</td>
+                                            <td className="p-4">
+                                                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                                                    {b.products_count !== undefined ? b.products_count : 0} sản phẩm
+                                                </span>
+                                            </td>
                                             <td className="p-4 text-center space-x-3">
                                                 <button
                                                     onClick={() => handleEditClick(b)}

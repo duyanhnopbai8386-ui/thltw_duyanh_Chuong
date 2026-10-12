@@ -23,6 +23,13 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        if ($user->status === 'blocked') {
+            return response()->json([
+                'message' => 'Tài khoản của bạn đã bị khóa bởi Quản trị viên!'
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -79,6 +86,35 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Đăng xuất thành công'
+        ], 200);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'password' => 'nullable|string|min:6|confirmed',
+        ], [
+            'name.required' => 'Vui lòng nhập họ và tên.',
+            'password.min' => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+            'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
+        ]);
+
+        $user->name = $validated['name'];
+        if (array_key_exists('phone', $validated)) {
+            $user->phone = $validated['phone'];
+        }
+        if (!empty($validated['password'])) {
+            $user->password = bcrypt($validated['password']);
+        }
+        $user->save();
+
+        return response()->json([
+            'message' => 'Cập nhật thông tin thành công',
+            'user' => $user
         ], 200);
     }
 }

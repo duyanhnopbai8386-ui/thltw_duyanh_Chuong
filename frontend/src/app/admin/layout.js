@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 
 export default function AdminLayout({ children }) {
     const pathname = usePathname();
-    const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
 
     useEffect(() => {
@@ -15,12 +14,18 @@ export default function AdminLayout({ children }) {
         }
 
         const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/admin/login');
-        } else {
-            setAuthorized(true);
+        let user = null;
+        try {
+            user = JSON.parse(localStorage.getItem('user') || 'null');
+        } catch (e) {}
+
+        if (!token || user?.role !== 'admin') {
+            window.location.replace('/admin/login');
+            return;
         }
-    }, [pathname, router]);
+
+        setAuthorized(true);
+    }, [pathname]);
 
     // Nếu ở trang đăng nhập admin thì hiển thị giao diện login riêng, không kèm sidebar
     if (pathname === '/admin/login') {
@@ -29,8 +34,8 @@ export default function AdminLayout({ children }) {
 
     if (!authorized) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-100 text-gray-500 font-medium">
-                Đang kiểm tra quyền quản trị...
+            <div className="flex min-h-screen items-center justify-center bg-gray-100 text-gray-400 font-medium text-sm">
+                Đang chuyển hướng về đăng nhập...
             </div>
         );
     }
@@ -41,6 +46,9 @@ export default function AdminLayout({ children }) {
         { name: 'Quản lý Danh mục', href: '/admin/categories', icon: '📁' },
         { name: 'Quản lý Thương hiệu', href: '/admin/brands', icon: '🏷️' },
         { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: '🛒' },
+        { name: 'Quản lý Người dùng', href: '/admin/users', icon: '👥' },
+        { name: 'Quản lý Bài viết', href: '/admin/posts', icon: '📝' },
+        { name: 'Quản lý Menu', href: '/admin/menus', icon: '📑' },
     ];
 
     return (
@@ -73,7 +81,8 @@ export default function AdminLayout({ children }) {
                     <button
                         onClick={() => {
                             localStorage.removeItem('token');
-                            window.location.href = '/admin/login';
+                            localStorage.removeItem('user');
+                            window.location.replace('/admin/login');
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
                     >
