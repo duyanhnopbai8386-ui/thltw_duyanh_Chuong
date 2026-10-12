@@ -20,6 +20,13 @@ class ProductController extends Controller
         return ProductResource::collection($products);
     }
 
+    public function show($id): ProductResource
+    {
+        $product = Product::with(['brand', 'category'])->findOrFail($id);
+
+        return new ProductResource($product);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

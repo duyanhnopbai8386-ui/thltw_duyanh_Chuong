@@ -56,6 +56,12 @@ class OrderController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
+        ], [
+            'customer_name.required' => 'Vui lòng nhập tên người nhận.',
+            'customer_phone.required' => 'Vui lòng nhập số điện thoại.',
+            'customer_address.required' => 'Vui lòng nhập địa chỉ nhận hàng.',
+            'items.required' => 'Giỏ hàng của bạn đang trống.',
+            'items.*.product_id.exists' => 'Sản phẩm trong giỏ hàng không tồn tại hoặc đã bị xóa.',
         ]);
 
         return DB::transaction(function () use ($request, $validated) {
@@ -76,8 +82,10 @@ class OrderController extends Controller
                 ];
             }
 
+            $userId = auth('sanctum')->id() ?? $request->user()?->id;
+
             $order = Order::create([
-                'user_id' => $request->user()?->id,
+                'user_id' => $userId,
                 'customer_name' => $validated['customer_name'],
                 'customer_email' => $validated['customer_email'] ?? null,
                 'customer_phone' => $validated['customer_phone'],
@@ -136,6 +144,34 @@ class OrderController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Lịch sử đơn hàng của bạn',
+            'data' => $orders
+        ], 200);
+    }
+    // 6. Tra cứu đơn hàng công khai (theo Số điện thoại hoặc danh sách IDs)
+    public function lookup(Request $request)
+    {
+        $phone = $request->query('phone');
+        $ids = $request->query('ids');
+
+        $query = Order::with('items.product');
+
+        if ($phone) {
+            $query->where('customer_phone', $phone);
+        } elseif ($ids) {
+            $idArray = array_filter(explode(',', $ids));
+            $query->whereIn('id', $idArray);
+        } else {
+            return response()->json([
+                'status' => true,
+                'data' => []
+            ], 200);
+        }
+
+        $orders = $query->latest()->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Kết quả tra cứu đơn hàng',
             'data' => $orders
         ], 200);
     }

@@ -1,10 +1,39 @@
-// src/app/admin/layout.js
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function AdminLayout({ children }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const [authorized, setAuthorized] = useState(false);
+
+    useEffect(() => {
+        if (pathname === '/admin/login') {
+            setAuthorized(true);
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/admin/login');
+        } else {
+            setAuthorized(true);
+        }
+    }, [pathname, router]);
+
+    // Nếu ở trang đăng nhập admin thì hiển thị giao diện login riêng, không kèm sidebar
+    if (pathname === '/admin/login') {
+        return children;
+    }
+
+    if (!authorized) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gray-100 text-gray-500 font-medium">
+                Đang kiểm tra quyền quản trị...
+            </div>
+        );
+    }
 
     const menuItems = [
         { name: 'Dashboard', href: '/admin', icon: '📊' },

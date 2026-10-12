@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { mockCartItems } from '@/data/cart';
@@ -15,6 +15,26 @@ export default function CartPage() {
     note: ''
   });
   const router = useRouter();
+
+  useEffect(() => {
+    // Tải sản phẩm thật từ API để giỏ hàng liên kết đúng ID sản phẩm đang có trong Database
+    fetch('http://127.0.0.1:8000/api/products')
+      .then(res => res.json())
+      .then(data => {
+        const prodList = data.data || [];
+        if (prodList.length > 0) {
+          const initialCart = prodList.slice(0, 2).map((p, idx) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.sale_price || p.price),
+            image: p.image,
+            quantity: idx === 0 ? 2 : 1
+          }));
+          setItems(initialCart);
+        }
+      })
+      .catch(err => console.error("Lỗi tải sản phẩm cho giỏ hàng:", err));
+  }, []);
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = subtotal > 0 ? 30000 : 0;
@@ -36,18 +56,34 @@ export default function CartPage() {
         }))
       };
 
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch('http://127.0.0.1:8000/api/orders', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: headers,
         body: JSON.stringify(payload)
       });
 
       const data = await res.json();
 
       if (res.ok) {
+        if (typeof window !== 'undefined') {
+          const guestOrders = JSON.parse(localStorage.getItem('guest_orders') || '[]');
+          if (data.data?.id && !guestOrders.includes(data.data.id)) {
+            guestOrders.unshift(data.data.id);
+            localStorage.setItem('guest_orders', JSON.stringify(guestOrders));
+          }
+          if (form.customer_phone) {
+            localStorage.setItem('last_customer_phone', form.customer_phone);
+          }
+        }
         alert('🎉 Đặt hàng thành công! Đơn hàng của bạn đã được ghi nhận.');
         setShowCheckout(false);
         router.push('/orders');

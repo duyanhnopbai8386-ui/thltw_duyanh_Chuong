@@ -14,16 +14,17 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // --- API XEM DỮ LIỆU CÔNG KHAI (Public - Dành cho khách hàng & shop) ---
 Route::get('/categories', [CategoryController::class, 'index']);
-Route::get('/categories/{slug}', [CategoryController::class, 'show']);
+Route::get('/categories/{slug}', [CategoryController::class, 'show'])->where('slug', '^(?!trash$).*$');
 
 Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{id}', [ProductController::class, 'show']);
+Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
 
 Route::get('/brands', [BrandController::class, 'index']);
-Route::get('/brands/{brand}', [BrandController::class, 'show']);
+Route::get('/brands/{brand}', [BrandController::class, 'show'])->whereNumber('brand');
 
-// Đặt hàng (Khách mua hàng)
+// Đặt hàng & Tra cứu đơn hàng (Khách mua hàng)
 Route::post('/orders', [OrderController::class, 'store']);
+Route::get('/orders/lookup', [OrderController::class, 'lookup']);
 
 // --- API DÀNH CHO USER ĐÃ ĐĂNG NHẬP (auth:sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {

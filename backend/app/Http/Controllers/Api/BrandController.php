@@ -21,6 +21,13 @@ class BrandController extends Controller
         return BrandResource::collection($brands);
     }
 
+    public function show($brand): BrandResource
+    {
+        $brandModel = $brand instanceof Brand ? $brand : Brand::findOrFail($brand);
+
+        return new BrandResource($brandModel);
+    }
+
     public function store(Request $request): BrandResource
     {
         $validated = $request->validate([

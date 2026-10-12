@@ -5,20 +5,81 @@ import Link from 'next/link';
 export default function CustomerOrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [searchPhone, setSearchPhone] = useState('');
+    const [searchLoading, setSearchLoading] = useState(false);
+
+    // 1. Tải danh sách đơn hàng
+    const fetchOrders = async () => {
+        setLoading(true);
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            setIsLoggedIn(!!token);
+
+            if (token) {
+                // Người dùng đã đăng nhập -> Lấy đơn hàng theo tài khoản
+                const res = await fetch('http://127.0.0.1:8000/api/my-orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (res.ok && data.data) {
+                    setOrders(data.data);
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Khách chưa đăng nhập -> Lấy các đơn hàng vừa đặt trên trình duyệt này
+            const guestOrders = JSON.parse(localStorage.getItem('guest_orders') || '[]');
+            const savedPhone = localStorage.getItem('last_customer_phone');
+
+            if (guestOrders.length > 0) {
+                const res = await fetch(`http://127.0.0.1:8000/api/orders/lookup?ids=${guestOrders.join(',')}`);
+                const data = await res.json();
+                setOrders(data.data || []);
+            } else if (savedPhone) {
+                setSearchPhone(savedPhone);
+                const res = await fetch(`http://127.0.0.1:8000/api/orders/lookup?phone=${savedPhone}`);
+                const data = await res.json();
+                setOrders(data.data || []);
+            } else {
+                setOrders([]);
+            }
+        } catch (err) {
+            console.error("Lỗi tải đơn hàng:", err);
+            setOrders([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // Tải danh sách đơn hàng đã đặt từ API
-        fetch('http://127.0.0.1:8000/api/orders')
-            .then(res => res.json())
-            .then(data => {
-                setOrders(data.data || []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error("Lỗi tải đơn hàng:", err);
-                setLoading(false);
-            });
+        fetchOrders();
     }, []);
+
+    // 2. Tra cứu đơn hàng theo số điện thoại
+    const handleSearchByPhone = async (e) => {
+        e.preventDefault();
+        if (!searchPhone.trim()) {
+            fetchOrders();
+            return;
+        }
+
+        setSearchLoading(true);
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/orders/lookup?phone=${encodeURIComponent(searchPhone.trim())}`);
+            const data = await res.json();
+            setOrders(data.data || []);
+        } catch (err) {
+            console.error("Lỗi tra cứu đơn hàng:", err);
+            alert("Không thể tra cứu đơn hàng lúc này!");
+        } finally {
+            setSearchLoading(false);
+        }
+    };
 
     const statusBadge = (status) => {
         switch (status) {
@@ -36,21 +97,63 @@ export default function CustomerOrdersPage() {
     return (
         <div className="bg-[#f5f5f7] min-h-screen pt-12 pb-24">
             <div className="max-w-4xl mx-auto px-6">
-                <div className="flex items-center justify-between mb-8">
+                
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Lịch sử đơn hàng</h1>
-                        <p className="text-sm text-gray-500 mt-1">Theo dõi trạng thái các đơn hàng bạn đã đặt</p>
+                        <p className="text-sm text-gray-500 mt-1">Theo dõi trạng thái và chi tiết các đơn hàng của bạn</p>
                     </div>
                     <Link
                         href="/products"
-                        className="bg-black text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition"
+                        className="self-start sm:self-auto bg-black text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition"
                     >
                         Tiếp tục mua sắm
                     </Link>
                 </div>
 
+                {/* Banner nhắc đăng nhập nếu là khách vãng lai */}
+                {!isLoggedIn && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-blue-800">
+                        <div className="flex items-center gap-2">
+                            <span>💡</span>
+                            <span>Bạn đang xem đơn hàng với tư cách <strong>Khách</strong>. Đăng nhập để lưu và quản lý đơn hàng vĩnh viễn.</span>
+                        </div>
+                        <Link 
+                            href="/login" 
+                            className="bg-blue-600 text-white font-medium px-4 py-1.5 rounded-xl text-xs hover:bg-blue-700 transition self-start sm:self-auto shrink-0"
+                        >
+                            Đăng nhập ngay
+                        </Link>
+                    </div>
+                )}
+
+                {/* Thanh tra cứu đơn hàng theo Số điện thoại */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-8">
+                    <form onSubmit={handleSearchByPhone} className="flex flex-col sm:flex-row gap-3 items-center">
+                        <div className="relative flex-1 w-full">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                            <input
+                                type="tel"
+                                placeholder="Nhập số điện thoại người nhận để tra cứu đơn..."
+                                value={searchPhone}
+                                onChange={(e) => setSearchPhone(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={searchLoading}
+                            className="w-full sm:w-auto bg-[#0071e3] text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-[#0077ED] transition shrink-0 disabled:opacity-50"
+                        >
+                            {searchLoading ? 'Đang tìm...' : 'Tra cứu đơn'}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Danh sách đơn hàng */}
                 {loading ? (
-                    <div className="text-center py-16 text-gray-400">Đang tải đơn hàng...</div>
+                    <div className="text-center py-16 text-gray-400">Đang tải thông tin đơn hàng...</div>
                 ) : orders.length > 0 ? (
                     <div className="space-y-6">
                         {orders.map((order) => (
@@ -68,6 +171,7 @@ export default function CustomerOrdersPage() {
                                 <div className="text-sm text-gray-600 mb-4 space-y-1">
                                     <p><span className="text-gray-400">Người nhận:</span> <span className="font-medium text-gray-800">{order.customer_name}</span> ({order.customer_phone})</p>
                                     <p><span className="text-gray-400">Địa chỉ:</span> {order.customer_address}</p>
+                                    {order.note && <p><span className="text-gray-400">Ghi chú:</span> {order.note}</p>}
                                 </div>
 
                                 {/* Danh sách sản phẩm trong đơn */}
@@ -97,8 +201,10 @@ export default function CustomerOrdersPage() {
                 ) : (
                     <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
                         <span className="text-4xl mb-4 block">📦</span>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Bạn chưa có đơn hàng nào</h3>
-                        <p className="text-sm text-gray-500 mb-6">Hãy dạo quanh cửa hàng và chọn những sản phẩm bạn ưng ý nhất nhé!</p>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Chưa tìm thấy đơn hàng nào</h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            Nếu bạn đã từng đặt hàng, vui lòng thử nhập số điện thoại người nhận vào ô tra cứu ở trên.
+                        </p>
                         <Link
                             href="/products"
                             className="bg-[#0071e3] text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-[#0077ED] transition"
