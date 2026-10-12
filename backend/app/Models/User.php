@@ -22,7 +22,7 @@ class User extends Authenticatable
 
     public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Order::class);
+        return $this->hasMany(Order::class);// 1 user có nhiều đơn hàng
     }
 
     protected $hidden = [

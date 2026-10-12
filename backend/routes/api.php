@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\MenuController;
 
 // --- API XÁC THỰC TÀI KHOẢN (Public) ---
 Route::post('/register', [AuthController::class, 'register']);
@@ -26,6 +27,8 @@ Route::get('/brands/{brand}', [BrandController::class, 'show'])->whereNumber('br
 
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{id}', [PostController::class, 'show']);
+
+Route::get('/menus', [MenuController::class, 'index']);
 
 // Đặt hàng & Tra cứu đơn hàng (Khách mua hàng)
 Route::post('/orders', [OrderController::class, 'store']);
@@ -91,4 +94,12 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/posts', [PostController::class, 'store']);
     Route::put('/posts/{id}', [PostController::class, 'update']);
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+
+    // Quản lý Menu điều hướng
+    Route::get('/menus/trash', [MenuController::class, 'trash']);
+    Route::post('/menus/{id}/restore', [MenuController::class, 'restore']);
+    Route::delete('/menus/{id}/force-delete', [MenuController::class, 'forceDelete']);
+    Route::post('/menus', [MenuController::class, 'store']);
+    Route::put('/menus/{id}', [MenuController::class, 'update']);
+    Route::delete('/menus/{id}', [MenuController::class, 'destroy']);
 });
