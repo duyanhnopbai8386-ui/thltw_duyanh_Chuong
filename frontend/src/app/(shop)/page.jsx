@@ -21,7 +21,7 @@ export default function ShopHomePage() {
           fetch('http://127.0.0.1:8000/api/products?type=sale&per_page=4'),
           fetch('http://127.0.0.1:8000/api/products?type=hot&per_page=4'),
           fetch('http://127.0.0.1:8000/api/products?type=featured&per_page=4'),
-          fetch('http://127.0.0.1:8000/api/categories'),
+          fetch('http://127.0.0.1:8000/api/categories?limit=100'),
         ]);
 
         const [dataNew, dataSale, dataHot, dataFeatured, dataCat] = await Promise.all([
@@ -103,7 +103,7 @@ export default function ShopHomePage() {
       {categories.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 -mt-6 relative z-20">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-md border border-gray-100 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">
+            <span className="text-xs font-bold text-amber-500 uppercase tracking-wider px-2">
               Danh mục:
             </span>
             <div className="flex flex-wrap gap-2">

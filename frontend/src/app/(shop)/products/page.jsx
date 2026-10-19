@@ -26,13 +26,23 @@ function ProductListContent() {
   // 1. Tải danh mục và thương hiệu
   useEffect(() => {
     Promise.all([
-      fetch('http://127.0.0.1:8000/api/categories').then(r => r.json()),
+      fetch('http://127.0.0.1:8000/api/categories?limit=100').then(r => r.json()),
       fetch('http://127.0.0.1:8000/api/brands').then(r => r.json()),
     ]).then(([catData, brandData]) => {
       setCategories(catData.data || []);
       setBrands(brandData.data || []);
     }).catch(err => console.error('Lỗi tải danh mục/thương hiệu:', err));
   }, []);
+
+  // Đồng bộ khi URL thay đổi (VD: bấm từ danh mục trang chủ vào)
+  useEffect(() => {
+    const catId = searchParams.get('category_id');
+    if (catId !== null) setSelectedCategory(catId);
+    const bId = searchParams.get('brand_id');
+    if (bId !== null) setSelectedBrand(bId);
+    const s = searchParams.get('sort');
+    if (s) setSort(s);
+  }, [searchParams]);
 
   // 2. Tải danh sách sản phẩm theo bộ lọc
   const fetchProducts = useCallback(async () => {

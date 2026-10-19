@@ -11,8 +11,8 @@ class CategoryController extends Controller
     // 1. LẤY DANH SÁCH DANH MỤC CÓ PHÂN TRANG (GET /api/categories)
     public function index(Request $request)
     {
-        // lấy số lượng sản phẩm dùng limit cắt lấy đúng 5 sản phẩm
-        $limit = $request->query('limit', 5);
+        // Mặc định lấy 100 danh mục để các dropdown chọn danh mục ngoài Shop không bị thiếu
+        $limit = $request->query('limit', 100);
 
         // try vấn thông qua model category , lấy danh mục có cột status = 1, săp xếp mới nhất
         // trước, lấy dữ liệu của trang được yêu cầu với mỗi trang là limit
