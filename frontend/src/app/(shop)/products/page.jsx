@@ -26,13 +26,23 @@ function ProductListContent() {
   // 1. Tải danh mục và thương hiệu
   useEffect(() => {
     Promise.all([
-      fetch('http://127.0.0.1:8000/api/categories').then(r => r.json()),
+      fetch('http://127.0.0.1:8000/api/categories?limit=100').then(r => r.json()),
       fetch('http://127.0.0.1:8000/api/brands').then(r => r.json()),
     ]).then(([catData, brandData]) => {
       setCategories(catData.data || []);
       setBrands(brandData.data || []);
     }).catch(err => console.error('Lỗi tải danh mục/thương hiệu:', err));
   }, []);
+
+  // Đồng bộ khi URL thay đổi (VD: bấm từ danh mục trang chủ vào)
+  useEffect(() => {
+    const catId = searchParams.get('category_id');
+    if (catId !== null) setSelectedCategory(catId);
+    const bId = searchParams.get('brand_id');
+    if (bId !== null) setSelectedBrand(bId);
+    const s = searchParams.get('sort');
+    if (s) setSort(s);
+  }, [searchParams]);
 
   // 2. Tải danh sách sản phẩm theo bộ lọc
   const fetchProducts = useCallback(async () => {
@@ -133,7 +143,7 @@ function ProductListContent() {
                 className="w-full bg-[#f5f5f7] border border-gray-200 focus:border-blue-500 focus:bg-white rounded-2xl pl-10 pr-20 py-2.5 text-xs sm:text-sm outline-none transition"
               />
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                🔍
+              
               </span>
               <button
                 type="submit"
@@ -188,7 +198,7 @@ function ProductListContent() {
                 selectedCategory ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-700'
               }`}
             >
-              <option value="">📁 Tất cả danh mục</option>
+              <option value="">Tất cả danh mục</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -202,7 +212,7 @@ function ProductListContent() {
                 selectedBrand ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-700'
               }`}
             >
-              <option value="">🏷️ Tất cả thương hiệu</option>
+              <option value=""> Tất cả thương hiệu</option>
               {brands.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -216,7 +226,7 @@ function ProductListContent() {
                 priceRange ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-700'
               }`}
             >
-              <option value="">💰 Mọi mức giá</option>
+              <option value="">Mọi mức giá</option>
               <option value="under_2m">Dưới 2 triệu</option>
               <option value="2m_10m">2 triệu - 10 triệu</option>
               <option value="10m_30m">10 triệu - 30 triệu</option>
@@ -229,7 +239,7 @@ function ProductListContent() {
                 onClick={handleResetFilters}
                 className="text-xs text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-2 rounded-xl font-medium transition flex items-center gap-1"
               >
-                ✕ Xóa bộ lọc
+               Xóa bộ lọc
               </button>
             )}
 
@@ -263,7 +273,7 @@ function ProductListContent() {
         ) : (
           /* TRỐNG KẾT QUẢ */
           <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm">
-            <div className="text-5xl mb-4">🔍</div>
+            <div className="text-5xl mb-4"></div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Không tìm thấy sản phẩm phù hợp</h3>
             <p className="text-xs text-gray-500 mb-6 max-w-sm mx-auto">
               Không có sản phẩm nào thỏa mãn các điều kiện tìm kiếm hoặc bộ lọc hiện tại.

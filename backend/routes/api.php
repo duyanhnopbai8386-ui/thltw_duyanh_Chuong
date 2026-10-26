@@ -7,20 +7,17 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
-<<<<<<< HEAD
 use App\Http\Controllers\Api\PageController;
-use App\Controllers\Api\SettingController;
-=======
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\MenuController;
->>>>>>> origin/main
 
 // --- API XÁC THỰC TÀI KHOẢN (Public) ---
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// --- API XEM DỮ LIỆU CÔNG KHAI (Public - Dành cho khách hàng & shop) ---
+// --- API XEM DỮ LIỆU CÔNG KHAI ---
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryController::class, 'show'])->where('slug', '^(?!trash$).*$');
 
@@ -36,24 +33,21 @@ Route::get('/posts/{id}', [PostController::class, 'show']);
 
 Route::get('/menus', [MenuController::class, 'index']);
 
-// Đặt hàng & Tra cứu đơn hàng (Khách mua hàng)
+// Đặt hàng & Tra cứu đơn hàng
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/lookup', [OrderController::class, 'lookup']);
  
-// --- API DÀNH CHO USER ĐÃ ĐĂNG NHẬP (auth:sanctum) ---
+// --- API DÀNH CHO USER ĐÃ ĐĂNG NHẬP ---
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
 
-    // Giỏ hàng (User)
     Route::apiResource('carts', CartController::class);
-
-    // Lịch sử đơn hàng của User
     Route::get('/my-orders', [OrderController::class, 'myOrders']);
 });
 
-// --- API QUẢN TRỊ ADMIN (Thêm, Sửa, Xóa Categories, Products, Brands, Quản lý Orders) ---
+// --- API QUẢN TRỊ ADMIN ---
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     // Quản lý Categories
     Route::get('/categories/trash', [CategoryController::class, 'trash']);
@@ -79,27 +73,26 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::put('/brands/{brand}', [BrandController::class, 'update']);
     Route::delete('/brands/{brand}', [BrandController::class, 'destroy']);
 
-    // Quản lý Đơn hàng (Orders) - Hỗ trợ cả 2 dạng đường dẫn để tương thích tuyệt đối với Frontend
+    // Quản lý Orders
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
-
     Route::get('/admin/orders', [OrderController::class, 'index']);
     Route::get('/admin/orders/{id}', [OrderController::class, 'show']);
     Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
-<<<<<<< HEAD
+
+    // Quản lý Pages & Settings
     Route::apiResource('pages', PageController::class);
     Route::get('settings', [SettingController::class, 'index']);
     Route::post('settings', [SettingController::class, 'update']);
-=======
 
-    // Quản lý Người dùng (Users)
+    // Quản lý Users
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
     Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
 
-    // Quản lý Bài viết (Posts)
+    // Quản lý Posts
     Route::get('/posts/trash', [PostController::class, 'trash']);
     Route::post('/posts/{id}/restore', [PostController::class, 'restore']);
     Route::delete('/posts/{id}/force-delete', [PostController::class, 'forceDelete']);
@@ -107,12 +100,11 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::put('/posts/{id}', [PostController::class, 'update']);
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
 
-    // Quản lý Menu điều hướng
+    // Quản lý Menus
     Route::get('/menus/trash', [MenuController::class, 'trash']);
     Route::post('/menus/{id}/restore', [MenuController::class, 'restore']);
     Route::delete('/menus/{id}/force-delete', [MenuController::class, 'forceDelete']);
     Route::post('/menus', [MenuController::class, 'store']);
     Route::put('/menus/{id}', [MenuController::class, 'update']);
     Route::delete('/menus/{id}', [MenuController::class, 'destroy']);
->>>>>>> origin/main
 });

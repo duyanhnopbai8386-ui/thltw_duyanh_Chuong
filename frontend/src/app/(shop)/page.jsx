@@ -21,7 +21,7 @@ export default function ShopHomePage() {
           fetch('http://127.0.0.1:8000/api/products?type=sale&per_page=4'),
           fetch('http://127.0.0.1:8000/api/products?type=hot&per_page=4'),
           fetch('http://127.0.0.1:8000/api/products?type=featured&per_page=4'),
-          fetch('http://127.0.0.1:8000/api/categories'),
+          fetch('http://127.0.0.1:8000/api/categories?limit=100'),
         ]);
 
         const [dataNew, dataSale, dataHot, dataFeatured, dataCat] = await Promise.all([
@@ -71,7 +71,7 @@ export default function ShopHomePage() {
         
         <div className="max-w-4xl mx-auto relative z-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold tracking-wider uppercase mb-5">
-            ✨ Trải Nghiệm Mua Sắm Thế Hệ Mới
+            Trải Nghiệm Mua Sắm Thế Hệ Mới
           </span>
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-5 leading-tight">
             Đột Phá Công Nghệ.<br />
@@ -93,7 +93,7 @@ export default function ShopHomePage() {
               href="/products?sort=sale"
               className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 px-7 py-3 rounded-full font-semibold text-sm hover:scale-105 active:scale-95 transition-all"
             >
-              Xem ưu đãi Sale 🔥
+              Xem ưu đãi Sale
             </Link>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function ShopHomePage() {
       {categories.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 -mt-6 relative z-20">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-md border border-gray-100 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">
+            <span className="text-xs font-bold text-amber-500 uppercase tracking-wider px-2">
               Danh mục:
             </span>
             <div className="flex flex-wrap gap-2">
@@ -169,7 +169,7 @@ export default function ShopHomePage() {
           <div className="flex justify-between items-end mb-8">
             <div>
               <span className="inline-flex items-center gap-1 bg-red-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                🔥 Flash Sale Giá Sốc
+                Flash Sale Giá Sốc
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mt-2">
                 Sản phẩm khuyến mãi đặc biệt.
@@ -270,7 +270,6 @@ export default function ShopHomePage() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl shrink-0">
-              🚀
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-sm">Giao Hàng Siêu Tốc</h3>
@@ -282,7 +281,6 @@ export default function ShopHomePage() {
 
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center text-2xl shrink-0">
-              🛡️
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-sm">Chính Hãng 100%</h3>
@@ -294,7 +292,6 @@ export default function ShopHomePage() {
 
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl shrink-0">
-              🔄
             </div>
             <div>
               <h3 className="font-bold text-gray-900 text-sm">Đổi Trả Dễ Dàng</h3>

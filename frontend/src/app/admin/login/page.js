@@ -21,11 +21,11 @@ export default function AdminLoginPage() {
             const token = res.data.access_token || res.data.token;
             
             if (token) {
-                // Lưu token vào localStorage để các request sau tự động đính kèm
-                localStorage.setItem('token', token);
+                // Lưu token Admin riêng biệt để không xung đột với tài khoản Khách ngoài Shop
+                localStorage.setItem('admin_token', token);
                 
                 if (res.data.user) {
-                    localStorage.setItem('user', JSON.stringify(res.data.user));
+                    localStorage.setItem('admin_user', JSON.stringify(res.data.user));
                 }
 
                 alert('Đăng nhập thành công!');
