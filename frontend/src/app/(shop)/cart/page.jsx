@@ -9,8 +9,10 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     customer_name: '',
+    customer_email: '',
     customer_phone: '',
     customer_address: '',
+    payment_method: 'cod', // cod, bank_transfer, momo
     note: ''
   });
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function CartPage() {
           setForm(prev => ({
             ...prev,
             customer_name: user.name || '',
+            customer_email: user.email || '',
             customer_phone: user.phone || '',
           }));
         }
@@ -80,8 +83,10 @@ export default function CartPage() {
     try {
       const payload = {
         customer_name: form.customer_name,
+        customer_email: form.customer_email || undefined,
         customer_phone: form.customer_phone,
         customer_address: form.customer_address,
+        payment_method: form.payment_method || 'cod',
         note: form.note,
         items: items.map(item => ({
           product_id: item.id,
@@ -319,16 +324,28 @@ export default function CartPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại liên hệ *</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="Ví dụ: 0912345678"
-                  value={form.customer_phone}
-                  onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại liên hệ *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="Ví dụ: 0912345678"
+                    value={form.customer_phone}
+                    onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Email nhận hóa đơn (Tùy chọn)</label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={form.customer_email}
+                    onChange={(e) => setForm({ ...form, customer_email: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
+                  />
+                </div>
               </div>
 
               <div>
@@ -341,6 +358,119 @@ export default function CartPage() {
                   onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
                 />
+              </div>
+
+              {/* CHỌN PHƯƠNG THỨC THANH TOÁN */}
+              <div className="pt-1">
+                <label className="block text-xs font-semibold text-gray-800 mb-2">
+                  Phương thức thanh toán *:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Option 1: COD */}
+                  <label
+                    className={`cursor-pointer rounded-2xl p-3 border text-left transition flex flex-col justify-between ${
+                      form.payment_method === 'cod'
+                        ? 'border-blue-500 bg-blue-50/50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-lg">💵</span>
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value="cod"
+                        checked={form.payment_method === 'cod'}
+                        onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
+                        className="text-blue-600"
+                      />
+                    </div>
+                    <div className="font-bold text-xs text-gray-900">COD</div>
+                    <div className="text-[10px] text-gray-500 leading-tight">Thanh toán khi nhận hàng</div>
+                  </label>
+
+                  {/* Option 2: Chuyển khoản QR */}
+                  <label
+                    className={`cursor-pointer rounded-2xl p-3 border text-left transition flex flex-col justify-between ${
+                      form.payment_method === 'bank_transfer'
+                        ? 'border-blue-500 bg-blue-50/50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-lg">🏦</span>
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value="bank_transfer"
+                        checked={form.payment_method === 'bank_transfer'}
+                        onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
+                        className="text-blue-600"
+                      />
+                    </div>
+                    <div className="font-bold text-xs text-gray-900">Chuyển khoản QR</div>
+                    <div className="text-[10px] text-gray-500 leading-tight">VietQR / Thẻ ATM / NCB</div>
+                  </label>
+
+                  {/* Option 3: MoMo */}
+                  <label
+                    className={`cursor-pointer rounded-2xl p-3 border text-left transition flex flex-col justify-between ${
+                      form.payment_method === 'momo'
+                        ? 'border-pink-500 bg-pink-50/50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-lg">👛</span>
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value="momo"
+                        checked={form.payment_method === 'momo'}
+                        onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
+                        className="text-pink-600"
+                      />
+                    </div>
+                    <div className="font-bold text-xs text-pink-700">Ví MoMo</div>
+                    <div className="text-[10px] text-gray-500 leading-tight">Quét mã MoMo siêu tốc</div>
+                  </label>
+                </div>
+
+                {/* HƯỚNG DẪN THANH TOÁN ONLINE KHI CHỌN */}
+                {form.payment_method === 'bank_transfer' && (
+                  <div className="mt-3 p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-amber-900 font-semibold">Thông tin chuyển khoản VietQR:</strong>
+                      <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">MB BANK</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-gray-700">
+                      <div>
+                        <p>Số tài khoản: <strong className="text-black font-mono">0988888888</strong></p>
+                        <p>Chủ TK: <strong>LE NGUYEN NGOC DUY ANH</strong></p>
+                        <p>Số tiền: <strong className="text-red-600">{total.toLocaleString('vi-VN')} đ</strong></p>
+                        <p>Nội dung: <strong className="text-blue-700 font-mono">DH {form.customer_phone || 'PHONE'}</strong></p>
+                      </div>
+                      <div className="flex flex-col items-center justify-center">
+                        <img
+                          src={`https://img.vietqr.io/image/MB-0988888888-compact2.png?amount=${total}&addInfo=DH%20${encodeURIComponent(form.customer_phone || 'KHACHHANG')}&accountName=LE%20NGUYEN%20NGOC%20DUY%20ANH`}
+                          alt="Mã QR Chuyển khoản"
+                          className="w-24 h-24 object-contain rounded-lg border bg-white shadow-sm"
+                        />
+                        <span className="text-[9px] text-gray-400 mt-0.5">Quét bằng app ngân hàng</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {form.payment_method === 'momo' && (
+                  <div className="mt-3 p-3.5 bg-pink-50/70 border border-pink-200 rounded-2xl text-xs space-y-1.5">
+                    <strong className="text-pink-900 font-semibold block">Thông tin chuyển tiền MoMo:</strong>
+                    <p className="text-[11px] text-gray-700">Số MoMo: <strong className="text-pink-800 font-mono">0988888888</strong></p>
+                    <p className="text-[11px] text-gray-700">Tên người nhận: <strong>LÊ NGUYỄN NGỌC DUY ANH</strong></p>
+                    <p className="text-[11px] text-gray-700">Số tiền: <strong className="text-red-600">{total.toLocaleString('vi-VN')} đ</strong></p>
+                    <p className="text-[11px] text-gray-700">Nội dung lời nhắn: <strong className="text-pink-800 font-mono">DH {form.customer_phone || 'PHONE'}</strong></p>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -356,7 +486,18 @@ export default function CartPage() {
 
               {/* Tóm tắt tổng tiền */}
               <div className="bg-gray-50 p-3.5 rounded-2xl flex justify-between items-center text-xs">
-                <span className="text-gray-600 font-medium">Tổng tiền thanh toán (COD):</span>
+                <div>
+                  <span className="text-gray-600 font-medium block">
+                    {form.payment_method === 'bank_transfer'
+                      ? 'Tổng thanh toán (Chuyển khoản QR):'
+                      : form.payment_method === 'momo'
+                      ? 'Tổng thanh toán (Ví MoMo):'
+                      : 'Tổng tiền thanh toán (COD):'}
+                  </span>
+                  {form.customer_email && (
+                    <span className="text-[10px] text-emerald-600">✓ Sẽ gửi hóa đơn xác nhận về {form.customer_email}</span>
+                  )}
+                </div>
                 <span className="text-base font-extrabold text-red-600">{total.toLocaleString('vi-VN')} đ</span>
               </div>
 

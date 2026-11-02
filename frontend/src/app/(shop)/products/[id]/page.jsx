@@ -11,10 +11,34 @@ export default function ProductDetailPage({ params: propParams }) {
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState({ total_reviews: 0, average_rating: 0, star_counts: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } });
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [imgError, setImgError] = useState(false);
   const [addedNotice, setAddedNotice] = useState(false);
+
+  // State cho Form đánh giá
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewerName, setReviewerName] = useState('');
+  const [reviewerEmail, setReviewerEmail] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState({ type: '', text: '' });
+
+  // Tự động điền thông tin nếu đã đăng nhập
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.name) setReviewerName(u.name);
+        if (u.email) setReviewerEmail(u.email);
+      }
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
     if (!productId) return;
@@ -22,9 +46,10 @@ export default function ProductDetailPage({ params: propParams }) {
     const fetchProductDetails = async () => {
       setLoading(true);
       try {
-        const [resProduct, resRelated] = await Promise.all([
+        const [resProduct, resRelated, resReviews] = await Promise.all([
           fetch(`http://127.0.0.1:8000/api/products/${productId}`),
           fetch(`http://127.0.0.1:8000/api/products/${productId}/related`),
+          fetch(`http://127.0.0.1:8000/api/products/${productId}/reviews`),
         ]);
 
         if (resProduct.ok) {
@@ -36,6 +61,12 @@ export default function ProductDetailPage({ params: propParams }) {
           const relData = await resRelated.json();
           setRelatedProducts(relData.data || []);
         }
+
+        if (resReviews.ok) {
+          const revData = await resReviews.json();
+          setReviews(revData.data || []);
+          if (revData.stats) setReviewStats(revData.stats);
+        }
       } catch (err) {
         console.error('Lỗi khi tải chi tiết sản phẩm:', err);
       } finally {
@@ -45,6 +76,58 @@ export default function ProductDetailPage({ params: propParams }) {
 
     fetchProductDetails();
   }, [productId]);
+
+  // Xử lý gửi đánh giá mới
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!reviewerName.trim() || !reviewComment.trim()) {
+      setReviewMsg({ type: 'error', text: 'Vui lòng nhập đầy đủ họ tên và nội dung đánh giá!' });
+      return;
+    }
+
+    setSubmittingReview(true);
+    setReviewMsg({ type: '', text: '' });
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`http://127.0.0.1:8000/api/products/${productId}/reviews`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          rating: reviewRating,
+          user_name: reviewerName.trim(),
+          user_email: reviewerEmail.trim() || undefined,
+          comment: reviewComment.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setReviewMsg({ type: 'success', text: 'Cảm ơn bạn đã gửi đánh giá! Đánh giá đã được ghi nhận.' });
+        setReviewComment('');
+        setShowReviewForm(false);
+        // Tải lại danh sách đánh giá
+        const revRes = await fetch(`http://127.0.0.1:8000/api/products/${productId}/reviews`);
+        if (revRes.ok) {
+          const revData = await revRes.json();
+          setReviews(revData.data || []);
+          if (revData.stats) setReviewStats(revData.stats);
+        }
+      } else {
+        setReviewMsg({ type: 'error', text: data.message || 'Không thể gửi đánh giá, vui lòng thử lại!' });
+      }
+    } catch (err) {
+      setReviewMsg({ type: 'error', text: 'Có lỗi kết nối máy chủ, vui lòng thử lại sau!' });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   // Thêm vào giỏ hàng
   const handleAddToCart = (redirectCart = false) => {
@@ -216,9 +299,27 @@ export default function ProductDetailPage({ params: propParams }) {
                 </div>
 
                 {/* Product Name */}
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 mb-4 leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 mb-2 leading-tight">
                   {product.name}
                 </h1>
+
+                {/* Rating & Review quick badge */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center text-amber-400 text-sm">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <span key={s}>
+                        {reviewStats.average_rating >= s ? '★' : '☆'}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-gray-800">
+                    {reviewStats.average_rating > 0 ? `${reviewStats.average_rating} / 5` : 'Chưa có đánh giá'}
+                  </span>
+                  <span className="text-xs text-gray-300">•</span>
+                  <a href="#reviews-section" className="text-xs text-blue-600 hover:underline font-medium">
+                    {reviewStats.total_reviews} nhận xét
+                  </a>
+                </div>
 
                 {/* Price Display */}
                 <div className="mb-6 p-4 rounded-2xl bg-gray-50 border border-gray-100/80">
@@ -308,7 +409,229 @@ export default function ProductDetailPage({ params: propParams }) {
           </div>
         </div>
 
-        {/* 3. SẢN PHẨM LIÊN QUAN (RELATED PRODUCTS) */}
+        {/* 3. ĐÁNH GIÁ & CHẤM ĐIỂM SẢN PHẨM (REVIEWS & RATINGS) */}
+        <section id="reviews-section" className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100 mb-16 scroll-mt-24">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-8 border-b border-gray-100">
+            <div>
+              <span className="text-amber-500 font-semibold text-xs uppercase tracking-wider">
+                Đánh Giá Từ Khách Hàng
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mt-1">
+                Nhận xét & Chấm điểm sản phẩm.
+              </h2>
+            </div>
+            <button
+              onClick={() => setShowReviewForm(!showReviewForm)}
+              className="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-md active:scale-95"
+            >
+              {showReviewForm ? '✕ Đóng form đánh giá' : '★ Viết đánh giá của bạn'}
+            </button>
+          </div>
+
+          {/* BẢNG TỔNG KẾT ĐIỂM SỐ */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 py-8 items-center border-b border-gray-100">
+            {/* Cột điểm trung bình */}
+            <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-6 bg-[#fbfbfd] rounded-2xl border border-gray-100">
+              <span className="text-5xl font-black text-gray-900 tracking-tight">
+                {reviewStats.average_rating > 0 ? reviewStats.average_rating : '5.0'}
+              </span>
+              <div className="flex items-center text-amber-400 text-xl my-2">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <span key={s}>
+                    {(reviewStats.average_rating || 5) >= s ? '★' : '☆'}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 font-medium">
+                Dựa trên <strong>{reviewStats.total_reviews}</strong> lượt đánh giá thực tế
+              </p>
+            </div>
+
+            {/* Cột thanh phân bổ số sao */}
+            <div className="md:col-span-8 space-y-2">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = reviewStats.star_counts?.[star] || 0;
+                const percent = reviewStats.total_reviews > 0 ? Math.round((count / reviewStats.total_reviews) * 100) : 0;
+                return (
+                  <div key={star} className="flex items-center gap-3 text-xs">
+                    <span className="w-12 font-medium text-gray-700 flex items-center gap-1">
+                      {star} <span className="text-amber-400">★</span>
+                    </span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-amber-400 h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${percent}%` }}
+                      ></div>
+                    </div>
+                    <span className="w-16 text-right text-gray-400 text-[11px]">
+                      {count} ({percent}%)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* THÔNG BÁO TRẠNG THÁI GỬI ĐÁNH GIÁ */}
+          {reviewMsg.text && (
+            <div className={`mt-6 p-4 rounded-2xl text-xs flex items-center justify-between ${
+              reviewMsg.type === 'success'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                : 'bg-red-50 text-red-800 border border-red-200'
+            }`}>
+              <span>{reviewMsg.text}</span>
+              <button onClick={() => setReviewMsg({ type: '', text: '' })} className="font-bold ml-2">✕</button>
+            </div>
+          )}
+
+          {/* FORM GỬI ĐÁNH GIÁ MỚI */}
+          {showReviewForm && (
+            <form onSubmit={handleSubmitReview} className="mt-8 p-6 sm:p-8 bg-gray-50/80 rounded-3xl border border-gray-200/80 space-y-5 animate-in fade-in duration-200">
+              <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                Gửi nhận xét của bạn về: <span className="text-blue-600">{product.name}</span>
+              </h3>
+
+              {/* Chọn số sao tương tác */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Chất lượng sản phẩm *:
+                </label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="text-3xl transition-transform hover:scale-125 focus:outline-none"
+                    >
+                      <span className={(hoverRating || reviewRating) >= star ? 'text-amber-400' : 'text-gray-300'}>
+                        ★
+                      </span>
+                    </button>
+                  ))}
+                  <span className="text-xs font-semibold text-amber-600 ml-2">
+                    {reviewRating === 5 && 'Tuyệt vời (5 sao)'}
+                    {reviewRating === 4 && 'Rất tốt (4 sao)'}
+                    {reviewRating === 3 && 'Bình thường (3 sao)'}
+                    {reviewRating === 2 && 'Chưa hài lòng (2 sao)'}
+                    {reviewRating === 1 && 'Rất tệ (1 sao)'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tên & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Họ và tên của bạn *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Nguyễn Văn A"
+                    value={reviewerName}
+                    onChange={(e) => setReviewerName(e.target.value)}
+                    className="w-full bg-white border border-gray-200 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Email liên hệ (Tùy chọn)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={reviewerEmail}
+                    onChange={(e) => setReviewerEmail(e.target.value)}
+                    className="w-full bg-white border border-gray-200 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
+                  />
+                </div>
+              </div>
+
+              {/* Nội dung đánh giá */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Nội dung nhận xét chi tiết *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Chia sẻ cảm nhận về đóng gói, chất lượng sử dụng, bảo hành hoặc dịch vụ..."
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  className="w-full bg-white border border-gray-200 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs outline-none transition"
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReviewForm(false)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-100 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="bg-[#0071e3] hover:bg-[#0077ED] text-white px-7 py-2.5 rounded-xl text-xs font-semibold transition shadow-md disabled:opacity-50"
+                >
+                  {submittingReview ? 'Đang gửi đánh giá...' : 'Gửi Đánh Giá'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* DANH SÁCH CÁC ĐÁNH GIÁ */}
+          <div className="mt-8 space-y-4">
+            {reviews.length > 0 ? (
+              reviews.map((rev) => (
+                <div key={rev.id} className="p-5 bg-[#fbfbfd] rounded-2xl border border-gray-100 flex flex-col sm:flex-row gap-4 items-start">
+                  {/* Avatar chữ cái đầu */}
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                    {rev.user_name ? rev.user_name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  {/* Nội dung review */}
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900 text-xs sm:text-sm">
+                          {rev.user_name}
+                        </span>
+                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          ✓ Đã mua hàng
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-gray-400">
+                        {new Date(rev.created_at).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+
+                    {/* Số sao */}
+                    <div className="flex items-center text-amber-400 text-xs mb-2">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <span key={s}>{rev.rating >= s ? '★' : '☆'}</span>
+                      ))}
+                    </div>
+
+                    {/* Bình luận */}
+                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-light">
+                      {rev.comment}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center bg-gray-50 rounded-2xl text-gray-500 text-xs">
+                Chưa có đánh giá nào cho sản phẩm này. Hãy bấm <strong>"Viết đánh giá của bạn"</strong> ở trên để là người đầu tiên nhận xét!
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 4. SẢN PHẨM LIÊN QUAN (RELATED PRODUCTS) */}
         <section>
           <div className="flex justify-between items-end mb-8">
             <div>

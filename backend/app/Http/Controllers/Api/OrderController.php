@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Mail\OrderConfirmationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -53,6 +56,7 @@ class OrderController extends Controller
             'customer_address' => 'required|string',
             'customer_email' => 'nullable|email|max:255',
             'note' => 'nullable|string',
+            'payment_method' => 'nullable|string|in:cod,bank_transfer,momo',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -64,7 +68,7 @@ class OrderController extends Controller
             'items.*.product_id.exists' => 'Sản phẩm trong giỏ hàng không tồn tại hoặc đã bị xóa.',
         ]);
 
-        return DB::transaction(function () use ($request, $validated) {
+        $order = DB::transaction(function () use ($request, $validated) {
             $totalPrice = 0;
             $orderItemsData = [];
 
@@ -83,6 +87,7 @@ class OrderController extends Controller
             }
 
             $userId = auth('sanctum')->id() ?? $request->user()?->id;
+            $paymentMethod = $validated['payment_method'] ?? 'cod';
 
             $order = Order::create([
                 'user_id' => $userId,
@@ -93,18 +98,32 @@ class OrderController extends Controller
                 'note' => $validated['note'] ?? null,
                 'total_price' => $totalPrice,
                 'status' => 'pending', // Mặc định là Chờ xử lý
+                'payment_method' => $paymentMethod,
+                'payment_status' => 'unpaid',
             ]);
 
             foreach ($orderItemsData as $itemData) {
                 $order->items()->create($itemData);
             }
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Đặt hàng thành công!',
-                'data' => $order->load('items.product')
-            ], 201);
+            return $order;
         });
+
+        // Gửi email xác nhận đơn hàng nếu khách có cung cấp email
+        if (!empty($order->customer_email)) {
+            try {
+                Mail::to($order->customer_email)->send(new OrderConfirmationMail($order));
+                Log::info("Đã gửi email xác nhận đơn hàng #{$order->id} tới email: {$order->customer_email}");
+            } catch (\Throwable $e) {
+                Log::error("Lỗi khi gửi email đơn hàng #{$order->id}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đặt hàng thành công!',
+            'data' => $order->load('items.product')
+        ], 201);
     }
 
     // 4. Sửa trạng thái đơn hàng (Dành cho Admin: pending -> shipping/processing -> completed -> cancelled)

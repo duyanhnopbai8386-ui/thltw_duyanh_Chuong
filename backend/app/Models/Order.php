@@ -21,6 +21,8 @@ class Order extends Model
         'note',
         'total_price',
         'status', // pending, processing, completed, cancelled
+        'payment_method', // cod, bank_transfer, momo
+        'payment_status', // unpaid, paid
     ];
 
     public function user(): BelongsTo

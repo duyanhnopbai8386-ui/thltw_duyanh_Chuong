@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\ReviewController;
 
 // --- API XÁC THỰC TÀI KHOẢN (Public) ---
 Route::post('/register', [AuthController::class, 'register']);
@@ -22,6 +23,8 @@ Route::get('/categories/{slug}', [CategoryController::class, 'show'])->where('sl
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
 Route::get('/products/{id}/related', [ProductController::class, 'related'])->whereNumber('id');
+Route::get('/products/{id}/reviews', [ReviewController::class, 'index'])->whereNumber('id');
+Route::post('/products/{id}/reviews', [ReviewController::class, 'store'])->whereNumber('id');
 
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/brands/{brand}', [BrandController::class, 'show'])->whereNumber('brand');
@@ -104,4 +107,10 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/menus', [MenuController::class, 'store']);
     Route::put('/menus/{id}', [MenuController::class, 'update']);
     Route::delete('/menus/{id}', [MenuController::class, 'destroy']);
+
+    // Quản lý Đánh giá sản phẩm (Reviews)
+    Route::get('/reviews', [ReviewController::class, 'adminIndex']);
+    Route::get('/admin/reviews', [ReviewController::class, 'adminIndex']);
+    Route::patch('/reviews/{id}/status', [ReviewController::class, 'toggleStatus']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 });

@@ -104,7 +104,7 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $related = Product::with(['brand', 'category'])
             ->where('id', '!=', $id)
-            ->where(function ($q) use ($product) {
+            ->where(function ($q) use ($product) { // cùng danh mục
                 if ($product->category_id) {
                     $q->where('category_id', $product->category_id);
                 }

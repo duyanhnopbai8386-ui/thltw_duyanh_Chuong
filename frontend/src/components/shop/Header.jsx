@@ -172,6 +172,7 @@ export default function Header() {
   const displayMenus = menus.length > 0 ? menus : [
     { name: 'Cửa hàng', link: '/' },
     { name: 'Sản phẩm', link: '/products' },
+    { name: 'Tin tức & Đánh giá', link: '/posts' },
     { name: 'Đơn hàng của tôi', link: '/orders' },
   ];
 

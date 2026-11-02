@@ -165,7 +165,22 @@ export default function CustomerOrdersPage() {
                                             {new Date(order.created_at).toLocaleString('vi-VN')}
                                         </span>
                                     </div>
-                                    <div>{statusBadge(order.status)}</div>
+                                    <div className="flex items-center gap-2">
+                                        {order.payment_method === 'bank_transfer' ? (
+                                            <span className="text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                                                🏦 Chuyển khoản QR
+                                            </span>
+                                        ) : order.payment_method === 'momo' ? (
+                                            <span className="text-[11px] font-semibold bg-pink-50 text-pink-700 border border-pink-200 px-2.5 py-0.5 rounded-full">
+                                                👛 Ví MoMo
+                                            </span>
+                                        ) : (
+                                            <span className="text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                                                💵 Tiền mặt (COD)
+                                            </span>
+                                        )}
+                                        {statusBadge(order.status)}
+                                    </div>
                                 </div>
 
                                 <div className="text-sm text-gray-600 mb-4 space-y-1">
