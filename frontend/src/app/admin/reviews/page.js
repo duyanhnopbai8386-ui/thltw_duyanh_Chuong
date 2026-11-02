@@ -16,6 +16,7 @@ export default function AdminReviewsPage() {
     const [selectedRating, setSelectedRating] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [selectedProductId, setSelectedProductId] = useState('');
+    const [selectedBuyer, setSelectedBuyer] = useState('');
 
     // Modal chi tiết
     const [detailModal, setDetailModal] = useState({
@@ -142,17 +143,21 @@ export default function AdminReviewsPage() {
         };
     }, [reviews]);
 
-    // 6. Danh sách sau khi lọc Search
+    // 6. Danh sách sau khi lọc Search & Đã mua hàng
     const filteredReviews = useMemo(() => {
-        if (!searchTerm.trim()) return reviews;
-        const term = searchTerm.toLowerCase().trim();
-        return reviews.filter(r => 
-            (r.user_name && r.user_name.toLowerCase().includes(term)) ||
-            (r.user_email && r.user_email.toLowerCase().includes(term)) ||
-            (r.comment && r.comment.toLowerCase().includes(term)) ||
-            (r.product?.name && r.product.name.toLowerCase().includes(term))
-        );
-    }, [reviews, searchTerm]);
+        return reviews.filter(r => {
+            if (selectedBuyer === '1' && !r.is_buyer) return false;
+            if (selectedBuyer === '0' && r.is_buyer) return false;
+            if (!searchTerm.trim()) return true;
+            const term = searchTerm.toLowerCase().trim();
+            return (
+                (r.user_name && r.user_name.toLowerCase().includes(term)) ||
+                (r.user_email && r.user_email.toLowerCase().includes(term)) ||
+                (r.comment && r.comment.toLowerCase().includes(term)) ||
+                (r.product?.name && r.product.name.toLowerCase().includes(term))
+            );
+        });
+    }, [reviews, searchTerm, selectedBuyer]);
 
     // 7. Nhóm theo TÀI KHOẢN / NGƯỜI DÙNG (Yêu cầu chính của User)
     const userGroups = useMemo(() => {
@@ -352,7 +357,7 @@ export default function AdminReviewsPage() {
 
             {/* 3. BỘ LỌC VÀ TÌM KIẾM */}
             <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                     {/* Tìm kiếm */}
                     <div className="md:col-span-1">
                         <label className="block text-xs font-semibold text-gray-600 mb-1.5">
@@ -423,9 +428,25 @@ export default function AdminReviewsPage() {
                             <option value="0">Đang ẩn</option>
                         </select>
                     </div>
+
+                    {/* Lọc theo xác thực mua hàng */}
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                            Xác thực mua:
+                        </label>
+                        <select
+                            value={selectedBuyer}
+                            onChange={(e) => setSelectedBuyer(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">Tất cả đánh giá</option>
+                            <option value="1">✓ Đã mua hàng</option>
+                            <option value="0">Khách trải nghiệm</option>
+                        </select>
+                    </div>
                 </div>
 
-                {(searchTerm || selectedProductId || selectedRating || selectedStatus !== '') && (
+                {(searchTerm || selectedProductId || selectedRating || selectedStatus !== '' || selectedBuyer !== '') && (
                     <div className="flex justify-end pt-2 border-t border-gray-50">
                         <button
                             onClick={() => {
@@ -433,6 +454,7 @@ export default function AdminReviewsPage() {
                                 setSelectedProductId('');
                                 setSelectedRating('');
                                 setSelectedStatus('');
+                                setSelectedBuyer('');
                             }}
                             className="text-xs text-red-600 bg-red-50 hover:bg-red-100 px-3.5 py-1.5 rounded-lg font-medium transition"
                         >
@@ -726,6 +748,17 @@ export default function AdminReviewsPage() {
                                             {rev.user_email && (
                                                 <div className="text-[11px] text-gray-400">{rev.user_email}</div>
                                             )}
+                                            <div className="mt-0.5">
+                                                {rev.is_buyer ? (
+                                                    <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold">
+                                                        ✓ Đã mua hàng
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-block text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.2 rounded font-medium">
+                                                        Chưa mua
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-[10px] text-gray-400 mt-0.5">
                                                 {new Date(rev.created_at).toLocaleDateString('vi-VN')}
                                             </div>
@@ -855,12 +888,22 @@ export default function AdminReviewsPage() {
                                         <div className="flex items-center gap-2">
                                             <span className="font-mono text-xs text-gray-400">#{index + 1}</span>
                                             {detailModal.type === 'user' ? (
-                                                <div className="font-semibold text-gray-900 text-xs">
-                                                    📦 {rev.product?.name || `Sản phẩm #${rev.product_id}`}
+                                                <div className="font-semibold text-gray-900 text-xs flex items-center gap-2">
+                                                    <span>📦 {rev.product?.name || `Sản phẩm #${rev.product_id}`}</span>
+                                                    {rev.is_buyer ? (
+                                                        <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.2 rounded-full font-medium">✓ Đã mua</span>
+                                                    ) : (
+                                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.2 rounded-full font-medium">Chưa mua</span>
+                                                    )}
                                                 </div>
                                             ) : (
-                                                <div className="font-semibold text-gray-900 text-xs">
-                                                    👤 {rev.user_name} ({rev.user_email || 'Không có email'})
+                                                <div className="font-semibold text-gray-900 text-xs flex items-center gap-2">
+                                                    <span>👤 {rev.user_name} ({rev.user_email || 'Không có email'})</span>
+                                                    {rev.is_buyer ? (
+                                                        <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.2 rounded-full font-medium">✓ Đã mua</span>
+                                                    ) : (
+                                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.2 rounded-full font-medium">Chưa mua</span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

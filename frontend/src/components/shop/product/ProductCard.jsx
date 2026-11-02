@@ -1,9 +1,31 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { isInWishlist, toggleWishlist } from '@/app/services/wishlistService';
 
 export default function ProductCard({ product }) {
   const [imgError, setImgError] = useState(false);
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    if (product?.id) {
+      setIsFav(isInWishlist(product.id));
+    }
+
+    const handleWishlistSync = () => {
+      if (product?.id) {
+        setIsFav(isInWishlist(product.id));
+      }
+    };
+
+    window.addEventListener('wishlistUpdated', handleWishlistSync);
+    window.addEventListener('authChange', handleWishlistSync);
+
+    return () => {
+      window.removeEventListener('wishlistUpdated', handleWishlistSync);
+      window.removeEventListener('authChange', handleWishlistSync);
+    };
+  }, [product?.id]);
 
   if (!product) return null;
 
@@ -16,9 +38,37 @@ export default function ProductCard({ product }) {
   const hasDiscount = salePrice !== null && salePrice > 0 && salePrice < price;
   const discountPercent = hasDiscount ? Math.round(((price - salePrice) / price) * 100) : 0;
 
+  const handleHeartClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const added = toggleWishlist(product);
+    setIsFav(added);
+  };
+
   return (
-    <div className="bg-white rounded-3xl overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full border border-gray-100">
+    <div className="bg-white rounded-3xl overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full border border-gray-100 relative">
       
+      {/* Nút Thêm vào Yêu thích (Heart Icon) */}
+      <button
+        type="button"
+        onClick={handleHeartClick}
+        aria-label="Thêm vào yêu thích"
+        title={isFav ? "Xóa khỏi yêu thích" : "Thêm vào danh sách yêu thích"}
+        className={`absolute top-4 right-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm ${
+          isFav 
+            ? 'bg-red-50 text-red-500 scale-105 border border-red-200 shadow-md' 
+            : 'bg-white/80 hover:bg-white text-gray-400 hover:text-red-500 hover:scale-110 backdrop-blur-sm'
+        }`}
+      >
+        <svg 
+          className={`w-5 h-5 transition-transform ${isFav ? 'fill-red-500 stroke-red-500 animate-pulse' : 'fill-none stroke-current'}`} 
+          strokeWidth="2" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+        </svg>
+      </button>
+
       {/* Image Container with Link */}
       <Link href={`/products/${product.id}`} className="block relative h-64 bg-[#fbfbfd] w-full overflow-hidden shrink-0">
         {imageUrl ? (
@@ -39,15 +89,8 @@ export default function ProductCard({ product }) {
 
         {/* Sale Discount Badge */}
         {hasDiscount && (
-          <div className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+          <div className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1 z-10">
             <span>Giảm {discountPercent}%</span>
-          </div>
-        )}
-
-        {/* Category Badge */}
-        {product.category?.name && (
-          <div className="absolute top-4 right-4 bg-gray-900/70 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-full">
-            {product.category.name}
           </div>
         )}
       </Link>
@@ -100,7 +143,6 @@ export default function ProductCard({ product }) {
           </Link>
         </div>
       </div>
-
     </div>
   );
 }

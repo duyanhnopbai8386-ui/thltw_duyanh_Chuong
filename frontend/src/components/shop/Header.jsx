@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCartCount } from '@/app/services/cartService';
+import { getWishlistCount } from '@/app/services/wishlistService';
 
 export default function Header() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function Header() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [menus, setMenus] = useState([]);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const dropdownRef = useRef(null);
 
   // Profile modal state
@@ -45,16 +47,24 @@ export default function Header() {
       } catch (e) {
         setCartCount(0);
       }
+
+      // Đếm số lượng sản phẩm trong danh sách yêu thích của tài khoản hiện tại
+      try {
+        setWishlistCount(getWishlistCount());
+      } catch (e) {
+        setWishlistCount(0);
+      }
     }
   };
 
   useEffect(() => {
     syncUser();
 
-    // Lắng nghe sự kiện giỏ hàng & đăng nhập thay đổi
+    // Lắng nghe sự kiện giỏ hàng, wishlist & đăng nhập thay đổi
     const handleStorageChange = () => syncUser();
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('cartUpdated', handleStorageChange);
+    window.addEventListener('wishlistUpdated', handleStorageChange);
     window.addEventListener('authChange', syncUser);
 
     // 2. Tải menu động từ backend
@@ -78,6 +88,7 @@ export default function Header() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('cartUpdated', handleStorageChange);
+      window.removeEventListener('wishlistUpdated', handleStorageChange);
       window.removeEventListener('authChange', syncUser);
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -207,6 +218,18 @@ export default function Header() {
             ))}
 
             <Link
+              href="/wishlist"
+              className="text-[14px] text-gray-600 hover:text-black font-medium transition-colors flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full"
+            >
+              <span>❤️ Yêu thích</span>
+              {wishlistCount > 0 && (
+                <span className="bg-red-500 text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full min-w-[18px] text-center">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
               href="/cart"
               className="text-[14px] text-gray-600 hover:text-black font-medium transition-colors flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full"
             >
@@ -277,6 +300,16 @@ export default function Header() {
                       >
                         <span className="text-base">📦</span>
                         <span>Đơn hàng của tôi</span>
+                      </Link>
+
+                      {/* 3. Sản phẩm yêu thích */}
+                      <Link
+                        href="/wishlist"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 font-medium transition-colors"
+                      >
+                        <span className="text-base">❤️</span>
+                        <span>Sản phẩm yêu thích ({wishlistCount})</span>
                       </Link>
 
                       {/* 3. Phân quyền Admin nếu có */}

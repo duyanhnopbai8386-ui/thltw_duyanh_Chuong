@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import ProductCard from '@/components/shop/product/ProductCard';
 import { addToCart } from '@/app/services/cartService';
+import { isInWishlist, toggleWishlist } from '@/app/services/wishlistService';
 
 export default function ProductDetailPage({ params: propParams }) {
   const router = useRouter();
@@ -18,6 +19,28 @@ export default function ProductDetailPage({ params: propParams }) {
   const [quantity, setQuantity] = useState(1);
   const [imgError, setImgError] = useState(false);
   const [addedNotice, setAddedNotice] = useState(false);
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    if (productId) {
+      setIsFav(isInWishlist(productId));
+    }
+    const handleWishlistSync = () => {
+      if (productId) setIsFav(isInWishlist(productId));
+    };
+    window.addEventListener('wishlistUpdated', handleWishlistSync);
+    window.addEventListener('authChange', handleWishlistSync);
+    return () => {
+      window.removeEventListener('wishlistUpdated', handleWishlistSync);
+      window.removeEventListener('authChange', handleWishlistSync);
+    };
+  }, [productId]);
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    const added = toggleWishlist(product);
+    setIsFav(added);
+  };
 
   // State cho Form đánh giá
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -26,6 +49,7 @@ export default function ProductDetailPage({ params: propParams }) {
   const [reviewerName, setReviewerName] = useState('');
   const [reviewerEmail, setReviewerEmail] = useState('');
   const [reviewComment, setReviewComment] = useState('');
+  const [isBuyerReview, setIsBuyerReview] = useState(true);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMsg, setReviewMsg] = useState({ type: '', text: '' });
 
@@ -105,6 +129,7 @@ export default function ProductDetailPage({ params: propParams }) {
           user_name: reviewerName.trim(),
           user_email: reviewerEmail.trim() || undefined,
           comment: reviewComment.trim(),
+          is_buyer: isBuyerReview,
         }),
       });
 
@@ -364,7 +389,7 @@ export default function ProductDetailPage({ params: propParams }) {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleAddToCart(false)}
                     className="flex-1 bg-black hover:bg-gray-800 text-white py-3.5 rounded-full font-semibold text-xs sm:text-sm active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
@@ -376,6 +401,20 @@ export default function ProductDetailPage({ params: propParams }) {
                     className="flex-1 bg-[#0071e3] hover:bg-[#0077ED] text-white py-3.5 rounded-full font-semibold text-xs sm:text-sm active:scale-95 transition-all shadow-md flex items-center justify-center gap-2"
                   >
                     <span> Mua ngay</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleToggleWishlist}
+                    className={`w-12 h-12 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                      isFav 
+                        ? 'bg-red-50 border-red-200 text-red-500 scale-105 shadow-md' 
+                        : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-red-500 hover:bg-white hover:scale-105'
+                    }`}
+                    title={isFav ? "Xóa khỏi danh sách yêu thích" : "Lưu vào sản phẩm yêu thích"}
+                  >
+                    <svg className={`w-5 h-5 ${isFav ? 'fill-red-500 stroke-red-500 animate-pulse' : 'fill-none stroke-current'}`} strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -541,6 +580,21 @@ export default function ProductDetailPage({ params: propParams }) {
                 ></textarea>
               </div>
 
+              {/* Checkbox Đã mua hàng */}
+              <div className="pt-1">
+                <label className="inline-flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 p-2.5 rounded-xl border border-gray-200 transition">
+                  <input
+                    type="checkbox"
+                    checked={isBuyerReview}
+                    onChange={(e) => setIsBuyerReview(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-700 font-medium">
+                    ✓ Tôi xác nhận đã mua và trải nghiệm sản phẩm này tại Store (Gắn huy hiệu uy tín)
+                  </span>
+                </label>
+              </div>
+
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
@@ -576,9 +630,16 @@ export default function ProductDetailPage({ params: propParams }) {
                         <span className="font-bold text-gray-900 text-xs sm:text-sm">
                           {rev.user_name}
                         </span>
-                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">
-                          ✓ Đã mua hàng
-                        </span>
+                        {rev.is_buyer ? (
+                          <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-sm">
+                            <span>✓</span>
+                            <span>Đã mua tại Store</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
+                            Khách hàng trải nghiệm
+                          </span>
+                        )}
                       </div>
                       <span className="text-[11px] text-gray-400">
                         {new Date(rev.created_at).toLocaleDateString('vi-VN')}

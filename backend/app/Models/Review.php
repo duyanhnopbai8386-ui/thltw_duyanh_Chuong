@@ -18,6 +18,7 @@ class Review extends Model
         'user_email',
         'rating',
         'comment',
+        'is_buyer',
         'status',
     ];
 
@@ -25,6 +26,7 @@ class Review extends Model
     {
         return [
             'rating' => 'integer',
+            'is_buyer' => 'boolean',
             'status' => 'boolean',
         ];
     }

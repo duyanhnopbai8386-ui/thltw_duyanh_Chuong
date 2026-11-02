@@ -54,6 +54,7 @@ class ReviewSeeder extends Seeder
                             'user_email' => $rev['user_email'],
                             'rating' => $rev['rating'],
                             'comment' => $rev['comment'],
+                            'is_buyer' => (($index + $rIndex) % 3 !== 1),
                             'status' => 1,
                             'created_at' => now()->subDays(rand(1, 15)),
                         ]

@@ -65,6 +65,28 @@ class ReviewController extends Controller
 
         $userId = $request->user()?->id;
 
+        // Tự động kiểm tra xem tài khoản này đã từng mua sản phẩm này chưa
+        $hasBought = false;
+        if ($userId) {
+            $hasBought = \App\Models\Order::where('user_id', $userId)
+                ->whereHas('items', function($q) use ($product) {
+                    $q->where('product_id', $product->id);
+                })
+                ->exists();
+        } elseif (!empty($validated['user_email'])) {
+            $hasBought = \App\Models\Order::where('customer_email', $validated['user_email'])
+                ->whereHas('items', function($q) use ($product) {
+                    $q->where('product_id', $product->id);
+                })
+                ->exists();
+        }
+
+        // Hỗ trợ chọn chủ động từ checkbox form hoặc tự động từ hệ thống
+        $isBuyer = $hasBought;
+        if ($request->has('is_buyer')) {
+            $isBuyer = $isBuyer || filter_var($request->input('is_buyer'), FILTER_VALIDATE_BOOLEAN);
+        }
+
         $review = Review::create([
             'product_id' => $product->id,
             'user_id' => $userId,
@@ -72,6 +94,7 @@ class ReviewController extends Controller
             'user_email' => $validated['user_email'] ?? null,
             'rating' => $validated['rating'],
             'comment' => $validated['comment'],
+            'is_buyer' => $isBuyer,
             'status' => 1, // Mặc định hiển thị
         ]);
 
