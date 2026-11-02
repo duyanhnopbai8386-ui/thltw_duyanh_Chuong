@@ -11,6 +11,11 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\PageController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\PromotionController;
 
 // --- API XÁC THỰC TÀI KHOẢN (Public) ---
 Route::post('/register', [AuthController::class, 'register']);
@@ -33,10 +38,16 @@ Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{id}', [PostController::class, 'show']);
 
 Route::get('/menus', [MenuController::class, 'index']);
+Route::get('/pages/{slug}', [PageController::class, 'show']);
+Route::get('/settings', [SettingController::class, 'index']);
+Route::get('/banners', [BannerController::class, 'index']);
+Route::post('/contacts', [ContactController::class, 'store']);
+Route::post('/promotions/check', [PromotionController::class, 'check']);
 
 // Đặt hàng & Tra cứu đơn hàng (Khách mua hàng)
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/lookup', [OrderController::class, 'lookup']);
+Route::put('/orders/{id}/cancel', [OrderController::class, 'cancelOrder'])->whereNumber('id');
  
 // --- API DÀNH CHO USER ĐÃ ĐĂNG NHẬP (auth:sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {
@@ -113,4 +124,31 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/reviews', [ReviewController::class, 'adminIndex']);
     Route::patch('/reviews/{id}/status', [ReviewController::class, 'toggleStatus']);
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Quản lý Trang đơn (Pages)
+    Route::get('/pages', [PageController::class, 'index']);
+    Route::post('/pages', [PageController::class, 'store']);
+    Route::put('/pages/{id}', [PageController::class, 'update']);
+    Route::delete('/pages/{id}', [PageController::class, 'destroy']);
+
+    // Quản lý Cấu hình hệ thống (Settings)
+    Route::post('/settings', [SettingController::class, 'update']);
+    Route::put('/settings', [SettingController::class, 'update']);
+
+    // Quản lý Banner
+    Route::get('/admin/banners', [BannerController::class, 'index']);
+    Route::post('/banners', [BannerController::class, 'store']);
+    Route::put('/banners/{id}', [BannerController::class, 'update']);
+    Route::delete('/banners/{id}', [BannerController::class, 'destroy']);
+
+    // Quản lý Khuyến mãi (Promotions)
+    Route::get('/promotions', [PromotionController::class, 'index']);
+    Route::post('/promotions', [PromotionController::class, 'store']);
+    Route::put('/promotions/{id}', [PromotionController::class, 'update']);
+    Route::delete('/promotions/{id}', [PromotionController::class, 'destroy']);
+
+    // Quản lý Liên hệ (Contacts)
+    Route::get('/contacts', [ContactController::class, 'index']);
+    Route::patch('/contacts/{id}/status', [ContactController::class, 'toggleStatus']);
+    Route::delete('/contacts/{id}', [ContactController::class, 'destroy']);
 });

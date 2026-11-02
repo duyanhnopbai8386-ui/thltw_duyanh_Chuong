@@ -74,6 +74,12 @@ class OrderController extends Controller
 
             foreach ($validated['items'] as $item) {
                 $product = Product::findOrFail($item['product_id']);
+                
+                // Kiểm tra tồn kho
+                if ($product->stock !== null && $product->stock < $item['quantity']) {
+                    throw new \Exception("Sản phẩm \"{$product->name}\" chỉ còn {$product->stock} sản phẩm trong kho, không đủ số lượng bạn yêu cầu!");
+                }
+
                 $itemPrice = $product->sale_price ?? $product->price;
                 $lineTotal = $itemPrice * $item['quantity'];
                 $totalPrice += $lineTotal;
@@ -84,6 +90,11 @@ class OrderController extends Controller
                     'price' => $itemPrice,
                     'quantity' => $item['quantity'],
                 ];
+
+                // Trừ số lượng tồn kho tự động
+                if ($product->stock !== null) {
+                    $product->decrement('stock', $item['quantity']);
+                }
             }
 
             $userId = auth('sanctum')->id() ?? $request->user()?->id;
@@ -133,7 +144,7 @@ class OrderController extends Controller
             'status' => 'required|in:pending,shipping,processing,completed,cancelled',
         ]);
 
-        $order = Order::find($id);
+        $order = Order::with('items')->find($id);
 
         if (!$order) {
             return response()->json([
@@ -142,12 +153,58 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $order->update(['status' => $validated['status']]);
+        $oldStatus = $order->status;
+        $newStatus = $validated['status'];
+
+        // Nếu chuyển sang hủy và trước đó chưa hủy -> hoàn lại tồn kho
+        if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
+            foreach ($order->items as $item) {
+                Product::where('id', $item->product_id)->increment('stock', $item->quantity);
+            }
+        }
+
+        $order->update(['status' => $newStatus]);
 
         return response()->json([
             'status' => true,
             'message' => 'Cập nhật trạng thái đơn hàng thành công',
             'data' => $order->load(['items.product', 'user'])
+        ], 200);
+    }
+
+    // 4.1. Hủy đơn hàng dành cho Khách hàng / Thành viên (Khi đơn đang ở trạng thái "pending")
+    public function cancelOrder(Request $request, $id)
+    {
+        $order = Order::with('items')->find($id);
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Không tìm thấy đơn hàng!'
+            ], 404);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Chỉ có thể hủy đơn hàng khi đơn đang ở trạng thái "Chờ xác nhận"!'
+            ], 400);
+        }
+
+        // Hoàn lại tồn kho cho từng sản phẩm
+        foreach ($order->items as $item) {
+            Product::where('id', $item->product_id)->increment('stock', $item->quantity);
+        }
+
+        $order->update([
+            'status' => 'cancelled',
+            'note' => ($order->note ? $order->note . ' | ' : '') . 'Khách tự hủy đơn'
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Đã hủy đơn hàng thành công!',
+            'data' => $order
         ], 200);
     }
 

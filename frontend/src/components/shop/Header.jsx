@@ -173,6 +173,7 @@ export default function Header() {
     { name: 'Cửa hàng', link: '/' },
     { name: 'Sản phẩm', link: '/products' },
     { name: 'Tin tức & Đánh giá', link: '/posts' },
+    { name: 'Liên hệ', link: '/contact' },
     { name: 'Đơn hàng của tôi', link: '/orders' },
   ];
 

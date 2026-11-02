@@ -60,6 +60,26 @@ export default function CustomerOrdersPage() {
         fetchOrders();
     }, []);
 
+    // Hủy đơn hàng khi còn đang chờ xử lý (pending)
+    const handleCancelOrder = async (orderId) => {
+        if (!confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${orderId}?`)) return;
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/cancel`, {
+                method: 'PUT',
+                headers: { 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert('Đã hủy đơn hàng thành công!');
+                fetchOrders();
+            } else {
+                alert(data.message || 'Không thể hủy đơn hàng này!');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối khi hủy đơn!');
+        }
+    };
+
     // 2. Tra cứu đơn hàng theo số điện thoại
     const handleSearchByPhone = async (e) => {
         e.preventDefault();
@@ -204,11 +224,23 @@ export default function CustomerOrdersPage() {
                                     ))}
                                 </div>
 
-                                <div className="flex justify-between items-center pt-2">
-                                    <span className="text-sm text-gray-500">Tổng thanh toán:</span>
-                                    <span className="text-xl font-bold text-blue-600">
-                                        {Number(order.total_price).toLocaleString('vi-VN')} đ
-                                    </span>
+                                <div className="flex flex-wrap justify-between items-center gap-3 pt-2">
+                                    <div>
+                                        {order.status === 'pending' && (
+                                            <button
+                                                onClick={() => handleCancelOrder(order.id)}
+                                                className="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3.5 py-1.5 rounded-xl transition shadow-sm active:scale-95"
+                                            >
+                                                ✕ Hủy đơn hàng này
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-sm text-gray-500 mr-2">Tổng thanh toán:</span>
+                                        <span className="text-xl font-bold text-blue-600">
+                                            {Number(order.total_price).toLocaleString('vi-VN')} đ
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))}

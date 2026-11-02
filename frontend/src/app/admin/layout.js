@@ -46,47 +46,55 @@ export default function AdminLayout({ children }) {
         { name: 'Quản lý Danh mục', href: '/admin/categories', icon: '📁' },
         { name: 'Quản lý Thương hiệu', href: '/admin/brands', icon: '🏷️' },
         { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: '🛒' },
-        { name: 'Quản lý Người dùng', href: '/admin/users', icon: '👥' },
+        { name: 'Đánh giá (Reviews)', href: '/admin/reviews', icon: '⭐' },
         { name: 'Quản lý Bài viết', href: '/admin/posts', icon: '📝' },
+        { name: 'Quản lý Trang đơn', href: '/admin/pages', icon: '📄' },
+        { name: 'Banner quảng cáo', href: '/admin/banners', icon: '🖼️' },
+        { name: 'Mã khuyến mãi', href: '/admin/promotions', icon: '🎟️' },
+        { name: 'Hộp thư Liên hệ', href: '/admin/contacts', icon: '💬' },
         { name: 'Quản lý Menu', href: '/admin/menus', icon: '📑' },
+        { name: 'Quản lý Người dùng', href: '/admin/users', icon: '👥' },
+        { name: 'Cấu hình hệ thống', href: '/admin/settings', icon: '⚙️' },
     ];
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-gray-100 overflow-hidden">
             {/* Sidebar */}
-            <aside className="w-64 bg-gray-900 text-white flex flex-col">
-                <div className="p-5 text-xl font-bold tracking-wider border-b border-gray-800">
-                    ⚡ Admin Panel
+            <aside className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
+                <div className="p-5 text-xl font-bold tracking-wider border-b border-gray-800 flex items-center gap-2">
+                    <span>⚡</span>
+                    <span>Admin Panel</span>
                 </div>
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
                     {menuItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-colors ${
                                     isActive
-                                        ? 'bg-blue-600 text-white'
+                                        ? 'bg-blue-600 text-white shadow-sm'
                                         : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                                 }`}
                             >
-                                <span>{item.icon}</span>
-                                {item.name}
+                                <span className="text-base">{item.icon}</span>
+                                <span>{item.name}</span>
                             </Link>
                         );
                     })}
                 </nav>
-                <div className="p-4 border-t border-gray-800">
+                <div className="p-3 border-t border-gray-800 bg-gray-950">
                     <button
                         onClick={() => {
                             localStorage.removeItem('admin_token');
                             localStorage.removeItem('admin_user');
                             window.location.replace('/admin/login');
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
+                        className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-gray-800 rounded-xl transition-colors font-semibold flex items-center gap-2"
                     >
-                        🚪 Đăng xuất
+                        <span>🚪</span>
+                        <span>Đăng xuất Quản trị</span>
                     </button>
                 </div>
             </aside>
@@ -94,18 +102,28 @@ export default function AdminLayout({ children }) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm">
-                    <h1 className="text-lg font-semibold text-gray-800">Hệ thống quản lý E-Commerce</h1>
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-600">Admin Chuong</span>
-                        <div className="w-9 h-9 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
-                            C
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm shrink-0">
+                    <h1 className="text-base font-bold text-gray-800">Hệ thống quản lý E-Commerce Fullstack</h1>
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/"
+                            target="_blank"
+                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3.5 py-1.5 rounded-full font-medium transition flex items-center gap-1"
+                        >
+                            <span>🌐</span>
+                            <span>Xem Website</span>
+                        </Link>
+                        <div className="flex items-center gap-2 border-l pl-4">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
+                                A
+                            </div>
+                            <span className="text-xs font-semibold text-gray-700">Administrator</span>
                         </div>
                     </div>
                 </header>
 
-                {/* Page Content */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-gray-50">
+                {/* Body Content */}
+                <main className="flex-1 overflow-y-auto bg-gray-50/50">
                     {children}
                 </main>
             </div>

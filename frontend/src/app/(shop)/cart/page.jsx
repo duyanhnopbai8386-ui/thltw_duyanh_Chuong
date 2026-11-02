@@ -7,6 +7,13 @@ export default function CartPage() {
   const [items, setItems] = useState([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Mã khuyến mãi (Vouchers)
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState('');
+  const [promoChecking, setPromoChecking] = useState(false);
+
   const [form, setForm] = useState({
     customer_name: '',
     customer_email: '',
@@ -70,7 +77,45 @@ export default function CartPage() {
 
   const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * (item.quantity || 1)), 0);
   const shipping = subtotal > 0 ? (subtotal >= 1000000 ? 0 : 30000) : 0;
-  const total = subtotal + shipping;
+  const discount = appliedPromo ? Number(appliedPromo.discount || 0) : 0;
+  const total = Math.max(0, subtotal + shipping - discount);
+
+  // Áp dụng mã giảm giá
+  const handleApplyPromo = async (e) => {
+    if (e) e.preventDefault();
+    if (!couponCode.trim()) {
+      setPromoError('Vui lòng nhập mã giảm giá!');
+      return;
+    }
+
+    setPromoChecking(true);
+    setPromoError('');
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/promotions/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim(), order_total: subtotal })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAppliedPromo(data.data);
+        setPromoError('');
+      } else {
+        setPromoError(data.message || 'Mã giảm giá không hợp lệ!');
+        setAppliedPromo(null);
+      }
+    } catch (err) {
+      setPromoError('Lỗi kết nối kiểm tra mã!');
+    } finally {
+      setPromoChecking(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setCouponCode('');
+    setPromoError('');
+  };
 
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
@@ -87,7 +132,7 @@ export default function CartPage() {
         customer_phone: form.customer_phone,
         customer_address: form.customer_address,
         payment_method: form.payment_method || 'cod',
-        note: form.note,
+        note: (form.note ? form.note + ' | ' : '') + (appliedPromo ? `Voucher: ${appliedPromo.code} (-${discount.toLocaleString('vi-VN')}đ)` : ''),
         items: items.map(item => ({
           product_id: item.id,
           quantity: item.quantity
@@ -269,11 +314,69 @@ export default function CartPage() {
                       {shipping === 0 ? <span className="text-emerald-600">Miễn phí</span> : `${shipping.toLocaleString('vi-VN')} đ`}
                     </span>
                   </div>
+
+                  {/* Giảm giá Voucher */}
+                  {appliedPromo && (
+                    <div className="flex justify-between text-emerald-700 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200">
+                      <div>
+                        <span className="font-bold block">Voucher ({appliedPromo.code})</span>
+                        <span className="text-[10px] text-emerald-600">{appliedPromo.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <span>-{discount.toLocaleString('vi-VN')} đ</span>
+                        <button onClick={handleRemovePromo} className="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
+                      </div>
+                    </div>
+                  )}
+
                   {shipping === 0 && (
                     <p className="text-[10px] text-emerald-600 bg-emerald-50 p-2 rounded-lg">
                       🎉 Đơn hàng trên 1.000.000đ được Miễn phí giao hàng toàn quốc!
                     </p>
                   )}
+
+                  {/* KHỐI NHẬP MÃ KHUYẾN MÃI */}
+                  <div className="pt-2 border-t border-gray-100">
+                    <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">Mã giảm giá (Coupon):</label>
+                    <form onSubmit={handleApplyPromo} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="VD: GIAM50K hoặc VIP10"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={promoChecking}
+                        className="bg-black hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50"
+                      >
+                        {promoChecking ? '...' : 'Áp dụng'}
+                      </button>
+                    </form>
+                    {promoError && (
+                      <p className="text-[10px] text-red-600 mt-1 font-medium">{promoError}</p>
+                    )}
+                    {/* Gợi ý mã */}
+                    <div className="flex gap-1.5 mt-2">
+                      <span className="text-[10px] text-gray-400">Gợi ý:</span>
+                      <button
+                        type="button"
+                        onClick={() => { setCouponCode('GIAM50K'); }}
+                        className="text-[10px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-0.5 rounded-md font-mono font-semibold"
+                      >
+                        GIAM50K
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setCouponCode('VIP10'); }}
+                        className="text-[10px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-0.5 rounded-md font-mono font-semibold"
+                      >
+                        VIP10
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
                     <span className="text-sm font-bold text-gray-900">Tổng cộng</span>
                     <span className="text-lg font-extrabold text-red-600">{total.toLocaleString('vi-VN')} đ</span>

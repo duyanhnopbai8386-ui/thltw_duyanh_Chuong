@@ -11,27 +11,34 @@ export default function Footer() {
               </div>
             DuyAnhStore
           </h3>
-          <p className="text-gray-500 max-w-sm leading-relaxed">
-            Hệ sinh thái mua sắm công nghệ và thời trang cao cấp. 
-            Tối giản, mượt mà và tận tâm.
+          <p className="text-gray-500 max-w-sm leading-relaxed text-xs">
+            Hệ sinh thái mua sắm thiết bị công nghệ Apple và phụ kiện cao cấp chính hãng. 
+            Cam kết 100% nguyên seal, bảo hành 1 đổi 1 trong 30 ngày.
           </p>
+          <div className="mt-4 text-xs text-gray-500 space-y-1">
+            <p>Hotline: <strong className="text-gray-900">1900 8888</strong> (8:00 - 21:30)</p>
+            <p>Email: <strong className="text-gray-900">support@duyanhstore.vn</strong></p>
+          </div>
         </div>
         
         <div>
-          <h3 className="font-semibold mb-4 text-gray-900">Khám phá</h3>
-          <ul className="space-y-3 text-gray-500">
+          <h3 className="font-semibold mb-4 text-gray-900 text-xs uppercase tracking-wider">Khám phá</h3>
+          <ul className="space-y-2.5 text-xs text-gray-500">
             <li><Link href="/" className="hover:text-black transition-colors">Trang chủ</Link></li>
-            <li><Link href="/products" className="hover:text-black transition-colors">Sản phẩm</Link></li>
+            <li><Link href="/products" className="hover:text-black transition-colors">Tất cả sản phẩm</Link></li>
+            <li><Link href="/posts" className="hover:text-black transition-colors">Tin tức công nghệ</Link></li>
             <li><Link href="/cart" className="hover:text-black transition-colors">Giỏ hàng</Link></li>
+            <li><Link href="/orders" className="hover:text-black transition-colors">Tra cứu đơn hàng</Link></li>
           </ul>
         </div>
 
         <div>
-          <h3 className="font-semibold mb-4 text-gray-900">Hỗ trợ</h3>
-          <ul className="space-y-3 text-gray-500">
-            <li><a href="#" className="hover:text-black transition-colors">Trung tâm trợ giúp</a></li>
-            <li><a href="#" className="hover:text-black transition-colors">Bảo hành</a></li>
-            <li><a href="#" className="hover:text-black transition-colors">Liên hệ hệ thống</a></li>
+          <h3 className="font-semibold mb-4 text-gray-900 text-xs uppercase tracking-wider">Chính sách & Hỗ trợ</h3>
+          <ul className="space-y-2.5 text-xs text-gray-500">
+            <li><Link href="/pages/gioi-thieu" className="hover:text-black transition-colors">Giới thiệu công ty</Link></li>
+            <li><Link href="/pages/chinh-sach-bao-hanh" className="hover:text-black transition-colors">Chính sách bảo hành & Đổi trả</Link></li>
+            <li><Link href="/pages/huong-dan-mua-hang" className="hover:text-black transition-colors">Hướng dẫn mua hàng</Link></li>
+            <li><Link href="/contact" className="hover:text-black transition-colors">Liên hệ đóng góp ý kiến</Link></li>
           </ul>
         </div>
       </div>
@@ -39,9 +46,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 border-t border-gray-300 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
         <p>Bản quyền © {new Date().getFullYear()} DuyAnhStore Inc. Bảo lưu mọi quyền.</p>
         <div className="flex space-x-4 mt-4 md:mt-0">
-          <a href="#" className="hover:text-black transition-colors">Chính sách quyền riêng tư</a>
+          <Link href="/pages/chinh-sach-bao-hanh" className="hover:text-black transition-colors">Chính sách bảo mật</Link>
           <span className="border-l border-gray-400"></span>
-          <a href="#" className="hover:text-black transition-colors">Điều khoản sử dụng</a>
+          <Link href="/pages/huong-dan-mua-hang" className="hover:text-black transition-colors">Điều khoản dịch vụ</Link>
         </div>
       </div>
     </footer>
