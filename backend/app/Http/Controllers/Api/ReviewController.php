@@ -87,7 +87,7 @@ class ReviewController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        $query = Review::with('product')->latest();
+        $query = Review::with(['product', 'user'])->latest();
 
         if ($request->filled('product_id')) {
             $query->where('product_id', $request->query('product_id'));
@@ -101,7 +101,7 @@ class ReviewController extends Controller
             $query->where('status', $request->query('status'));
         }
 
-        $limit = $request->query('per_page', 15);
+        $limit = $request->query('per_page', 200);
         $reviews = $query->paginate($limit);
 
         return response()->json([

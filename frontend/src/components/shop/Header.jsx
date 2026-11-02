@@ -257,17 +257,15 @@ export default function Header() {
                     </div>
 
                     <div className="py-1">
-                      {/* 1. Chỉnh sửa hồ sơ */}
-                      <button
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          setIsProfileModalOpen(true);
-                        }}
+                      {/* 1. Trang hồ sơ cá nhân */}
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsDropdownOpen(false)}
                         className="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 font-medium transition-colors"
                       >
                         <span className="text-base">👤</span>
-                        <span>Chỉnh sửa hồ sơ cá nhân</span>
-                      </button>
+                        <span>Hồ sơ cá nhân (Profile)</span>
+                      </Link>
 
                       {/* 2. Đơn hàng của tôi */}
                       <Link
