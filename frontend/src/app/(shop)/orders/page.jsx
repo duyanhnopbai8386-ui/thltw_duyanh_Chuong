@@ -17,17 +17,26 @@ export default function CustomerOrdersPage() {
             setIsLoggedIn(!!token);
 
             if (token) {
-                // Người dùng đã đăng nhập -> Lấy đơn hàng theo tài khoản
+                // Người dùng đã đăng nhập -> Lấy đơn hàng chính xác của tài khoản này
                 const res = await fetch('http://127.0.0.1:8000/api/my-orders', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     }
                 });
+
+                if (res.status === 401) {
+                    // Token hết hạn hoặc không hợp lệ -> Xóa và reset
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setIsLoggedIn(false);
+                    setOrders([]);
+                    return;
+                }
+
                 const data = await res.json();
-                if (res.ok && data.data) {
-                    setOrders(data.data);
-                    setLoading(false);
+                if (res.ok) {
+                    setOrders(data.data || []);
                     return;
                 }
             }
@@ -58,6 +67,16 @@ export default function CustomerOrdersPage() {
 
     useEffect(() => {
         fetchOrders();
+
+        // Tự động đồng bộ đơn hàng khi người dùng đăng nhập hoặc đổi tài khoản
+        const handleAuthSync = () => fetchOrders();
+        window.addEventListener('authChange', handleAuthSync);
+        window.addEventListener('storage', handleAuthSync);
+
+        return () => {
+            window.removeEventListener('authChange', handleAuthSync);
+            window.removeEventListener('storage', handleAuthSync);
+        };
     }, []);
 
     // Hủy đơn hàng khi còn đang chờ xử lý (pending)

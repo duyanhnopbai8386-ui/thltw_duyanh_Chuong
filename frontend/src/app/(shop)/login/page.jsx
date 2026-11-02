@@ -33,6 +33,7 @@ function LoginForm() {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
         window.dispatchEvent(new Event('authChange'));
+        window.dispatchEvent(new Event('cartUpdated'));
         alert('🎉 Đăng nhập thành công!');
         router.push(redirectPath);
       } else {

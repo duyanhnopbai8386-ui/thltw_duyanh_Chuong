@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import ProductCard from '@/components/shop/product/ProductCard';
+import { addToCart } from '@/app/services/cartService';
 
 export default function ProductDetailPage({ params: propParams }) {
   const router = useRouter();
@@ -129,7 +130,7 @@ export default function ProductDetailPage({ params: propParams }) {
     }
   };
 
-  // Thêm vào giỏ hàng
+  // Thêm vào giỏ hàng riêng biệt theo từng tài khoản
   const handleAddToCart = (redirectCart = false) => {
     if (!product) {
       alert('Chưa tải được thông tin sản phẩm, vui lòng thử lại!');
@@ -137,42 +138,17 @@ export default function ProductDetailPage({ params: propParams }) {
     }
 
     try {
-      let currentCart = [];
-      try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('cart') : null;
-        const parsed = raw ? JSON.parse(raw) : [];
-        currentCart = Array.isArray(parsed) ? parsed : [];
-      } catch (err) {
-        currentCart = [];
-      }
-
-      const validCart = currentCart.filter(item => item && item.id);
-      const existingIndex = validCart.findIndex((item) => Number(item.id) === Number(product.id));
-
       const actualPrice = product.sale_price && product.sale_price > 0 && product.sale_price < product.price
         ? product.sale_price
         : product.price;
 
-      const qtyToAdd = Math.max(1, Number(quantity) || 1);
-
-      if (existingIndex > -1) {
-        validCart[existingIndex].quantity = (Number(validCart[existingIndex].quantity) || 1) + qtyToAdd;
-      } else {
-        validCart.push({
-          id: product.id,
-          name: product.name,
-          price: actualPrice,
-          original_price: product.price,
-          sale_price: product.sale_price,
-          image: product.image,
-          quantity: qtyToAdd,
-        });
-      }
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(validCart));
-        window.dispatchEvent(new Event('cartUpdated'));
-      }
+      addToCart({
+        id: product.id,
+        name: product.name,
+        price: actualPrice,
+        price_sale: product.sale_price,
+        image: product.image,
+      }, quantity);
 
       if (redirectCart) {
         router.push('/cart');

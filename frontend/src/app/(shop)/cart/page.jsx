@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getCart, saveCart, clearCart, updateCartQuantity, removeFromCart } from '@/app/services/cartService';
 
 export default function CartPage() {
   const [items, setItems] = useState([]);
@@ -24,19 +25,12 @@ export default function CartPage() {
   });
   const router = useRouter();
 
-  // 1. Tải giỏ hàng từ localStorage & thông tin user đã đăng nhập
-  useEffect(() => {
+  // 1. Tải giỏ hàng riêng biệt theo từng tài khoản & thông tin user đã đăng nhập
+  const loadCartAndUser = useCallback(() => {
     if (typeof window !== 'undefined') {
       try {
-        let rawCart = [];
-        try {
-          const raw = localStorage.getItem('cart');
-          const parsed = raw ? JSON.parse(raw) : [];
-          rawCart = Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-          rawCart = [];
-        }
-        setItems(rawCart.filter(item => item && item.id));
+        const currentCart = getCart();
+        setItems(currentCart);
 
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
@@ -47,6 +41,13 @@ export default function CartPage() {
             customer_email: user.email || '',
             customer_phone: user.phone || '',
           }));
+        } else {
+          setForm(prev => ({
+            ...prev,
+            customer_name: '',
+            customer_email: '',
+            customer_phone: '',
+          }));
         }
       } catch (e) {
         console.error("Lỗi đọc giỏ hàng:", e);
@@ -54,25 +55,30 @@ export default function CartPage() {
     }
   }, []);
 
-  // Cập nhật giỏ hàng vào localStorage và dispatch event
-  const saveCart = (newItems) => {
-    setItems(newItems);
-    localStorage.setItem('cart', JSON.stringify(newItems));
-    window.dispatchEvent(new Event('cartUpdated'));
+  useEffect(() => {
+    loadCartAndUser();
+
+    // Lắng nghe thay đổi khi đổi tài khoản (authChange) hoặc cập nhật giỏ hàng (cartUpdated)
+    const handleCartSync = () => loadCartAndUser();
+    window.addEventListener('cartUpdated', handleCartSync);
+    window.addEventListener('authChange', handleCartSync);
+    window.addEventListener('storage', handleCartSync);
+
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartSync);
+      window.removeEventListener('authChange', handleCartSync);
+      window.removeEventListener('storage', handleCartSync);
+    };
+  }, [loadCartAndUser]);
+
+  const handleUpdateQuantity = (id, newQty) => {
+    const updated = updateCartQuantity(id, newQty);
+    setItems(updated);
   };
 
-  const updateQuantity = (id, newQty) => {
-    if (newQty <= 0) {
-      removeItem(id);
-      return;
-    }
-    const updated = items.map(item => item.id === id ? { ...item, quantity: newQty } : item);
-    saveCart(updated);
-  };
-
-  const removeItem = (id) => {
-    const updated = items.filter(item => item.id !== id);
-    saveCart(updated);
+  const handleRemoveItem = (id) => {
+    const updated = removeFromCart(id);
+    setItems(updated);
   };
 
   const subtotal = items.reduce((sum, item) => sum + (Number(item.price || 0) * (item.quantity || 1)), 0);
@@ -157,13 +163,12 @@ export default function CartPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Xóa giỏ hàng sau khi đặt thành công
-        localStorage.removeItem('cart');
+        // Xóa giỏ hàng riêng của tài khoản này sau khi đặt thành công
+        clearCart();
         setItems([]);
-        window.dispatchEvent(new Event('cartUpdated'));
 
         // Lưu đơn hàng guest nếu chưa đăng nhập
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !token) {
           const guestOrders = JSON.parse(localStorage.getItem('guest_orders') || '[]');
           if (data.data?.id && !guestOrders.includes(data.data.id)) {
             guestOrders.unshift(data.data.id);
@@ -256,7 +261,7 @@ export default function CartPage() {
                     {/* Tăng / Giảm số lượng */}
                     <div className="flex items-center border border-gray-200 rounded-full bg-gray-50">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                         className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-black font-bold text-xs"
                       >
                         -
@@ -265,7 +270,7 @@ export default function CartPage() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                         className="w-7 h-7 flex items-center justify-center text-gray-600 hover:text-black font-bold text-xs"
                       >
                         +
@@ -278,7 +283,7 @@ export default function CartPage() {
                         {(Number(item.price) * item.quantity).toLocaleString('vi-VN')} đ
                       </div>
                       <button
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => handleRemoveItem(item.id)}
                         className="text-[11px] text-red-500 hover:text-red-700 underline mt-1"
                       >
                         Xóa

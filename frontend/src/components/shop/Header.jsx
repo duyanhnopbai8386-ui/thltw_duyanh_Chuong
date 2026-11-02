@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getCartCount } from '@/app/services/cartService';
 
 export default function Header() {
   const router = useRouter();
@@ -38,11 +39,9 @@ export default function Header() {
         setUser(null);
       }
 
-      // Đếm số lượng sản phẩm trong giỏ hàng
+      // Đếm số lượng sản phẩm trong giỏ hàng riêng của tài khoản hiện tại
       try {
-        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        setCartCount(count);
+        setCartCount(getCartCount());
       } catch (e) {
         setCartCount(0);
       }
@@ -102,9 +101,12 @@ export default function Header() {
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('guest_orders');
+      localStorage.removeItem('last_customer_phone');
       setUser(null);
       setIsDropdownOpen(false);
       window.dispatchEvent(new Event('authChange'));
+      window.dispatchEvent(new Event('cartUpdated'));
       alert('Đã đăng xuất thành công!');
       router.push('/');
     }
